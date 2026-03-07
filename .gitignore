@@ -1,0 +1,36 @@
+# =========================
+# MPLAB X / XC32 Ignore File
+# =========================
+
+# MPLAB build and distribution folders
+build/
+dist/
+
+# MPLAB private settings
+nbproject/private/
+
+# Object files and compiled outputs
+*.o
+*.elf
+*.hex
+*.map
+*.cof
+*.bin
+*.lkr
+*.lst
+*.sym
+*.d
+
+# Log files
+*.log
+
+# Temporary editor or OS files
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
+
+# Backup files
+*~
+*.bak
+*.tmp
