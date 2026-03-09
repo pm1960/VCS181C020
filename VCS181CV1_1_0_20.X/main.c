@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include "cpusetup.h"
 #include "usbcom.h"
+#include "auxfunc.h"
 
 
 void main(void){

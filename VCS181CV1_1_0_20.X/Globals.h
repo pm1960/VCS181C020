@@ -109,7 +109,6 @@ union{
 union{      //regular transfer frame
     struct{ //first 2 
         uint16_t    statvar;    //opstat and VCS feedback. Needs to be 
-        uint16_t    comstat;    //status of USB and CAN communication status
         uint16_t    uac1;
         uint16_t    uac2;
         uint16_t    uac3;
@@ -117,29 +116,25 @@ union{      //regular transfer frame
         uint16_t    iac2;
         uint16_t    iac3;
         uint16_t    pac;
-        uint8_t     pacr; 
-        uint8_t     cosfi;
+        uint16_t     pacr; 
+        int16_t     cosfi;
         uint16_t    fac;
         uint16_t    ubatt;
-        uint8_t     tcoolin;
-        uint8_t     tcoolout;
-        uint8_t     tengoil;
-        uint8_t     tcylhead;
-        uint8_t     tbearing;
-        uint8_t     texhaust;
-        uint8_t     tcoil1;
-        uint8_t     tcoil2;
-        uint8_t     tcoil3;
-        uint8_t     tcomp;
-        uint8_t     tvcs;
+        int16_t     tcoolin;
+        int16_t     tcylhead;
+        int16_t     texhaust;
+        int16_t     tcoil;
+        int16_t     tbearing;
+        int16_t     tcoolout;
+        int16_t     tengoil;
+        int16_t     tvcs;
         uint8_t     poil;
         uint8_t     tank;
-        uint8_t     compon;
         uint16_t    engspeed;
         uint16_t    actu;
-        uint16_t    acti_pwmout;
-        uint16_t    wladc;
+        uint16_t    acti;
         uint16_t    runlast;
+        uint16_t    enlast;
         uint16_t    codeWarn;
         uint16_t    codeAlm;
         uint16_t    mwordlow;
@@ -150,7 +145,11 @@ union{      //regular transfer frame
         uint16_t    miscwordhigh;
         uint16_t    servwordlow;
         uint16_t    servwordhigh;
-        uint16_t    enlast;
+        uint8_t     actcom;
+        uint8_t     compon;
+        uint16_t    tankres;
+        uint8_t     tcomp;
+        uint8_t     stastoreason;
     }val;
     uint16_t trans[TX101LENGTH];
 }tx0101;
@@ -312,9 +311,6 @@ union{
     uint16_t trans[6];
 }tx013A;     //info transfer
 
-
-
-uint16_t adcbat, adc5v; //variables used to transfer ADC values from GENCONT to communication tasks. Required for calibration;
 uint16_t lasttrans;     //if waiting for a certain transfer, then CANCOM may use this variable to confirm it got that transfer
 uint32_t caldate, now,enrem;  //used to keep track of time and date
 uint32_t confword0,confword1,valsvn;    //confirmation words,  

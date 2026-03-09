@@ -346,15 +346,7 @@ void txtrans(uint16_t rqtransfer){
                     u4txbuf[4]=47;
                     break;
                     
-                case 0x0132:
-                    mem2trans(4,0x01D8,&u4txbuf[5],false);        
-                    u4txbuf[13]=adcbat;          //will always transmit actual readings, instead of  what is in memory!
-                    u4txbuf[14]=adcbat>>8;
-                    u4txbuf[15]=adc5v; 
-                    u4txbuf[16]=adc5v>>8; 
-                    mem2trans(2,0x01A0,&u4txbuf[17],false);
-                    u4txbuf[4]=23;
-                    break;
+
                     
                 case 0x0138:
                     for(i=0;i!=32;i++)

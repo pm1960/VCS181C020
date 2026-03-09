@@ -20,8 +20,8 @@ extern "C" {
 #include "Globals.h"
 #include "Defines.h"
 
-#define MEMSIZE 16834   //length in uint16
-#define MEMPAGE 64      //length in uint8;
+#define MEMSIZE 0x4000   //length in uint16
+#define MEMPAGE 0x40      //length in uint8;
 
 bool readeeprom(uint16_t adr,uint16_t *buf,uint16_t len);
 bool writeeeprom(uint16_t adr, uint16_t *buf, uint16_t len);

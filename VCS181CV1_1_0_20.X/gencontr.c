@@ -11,8 +11,8 @@ uint32_t tdisch;          //discharge time for compenasion bank 0; bank 1 is dou
 
 //static functions:
 static void readintad(bool initrq);
-static uint8_t gettemp(uint32_t *rx, uint16_t *intex);
-
+static int16_t gettemp(uint16_t adcx, uint16_t *table);
+static void calctank(void);
 static void checkoilfail(bool clear);
 static void actcheck(void);
 static void slowreadcheck(bool eovcs,bool init);
@@ -687,14 +687,15 @@ void GENCONTR_Tasks (void){
 //Engine speed, freqeuncy and power factor need to be updated within 200ms or they will be cleared.
 void readintad(bool initrq){
     uint8_t i;
-    static uint32_t sumbuf[14],lastfrq,tfaildcdc;
-    static uint16_t slowcntr,fastcntr;
+    int16_t coiltemp[3];
+    static uint16_t sumbuf[14],lastfrq,tfaildcdc;
+    static uint16_t slowcntr;
     static bool dcdcfailed,nextf;
-    uint16_t rx,alfa;
+    uint16_t rx,alfa,adc[14];
     if(initrq){
         for(i=0;i!=14;i++)
             sumbuf[i]=0;
-        slowcntr=fastcntr=0;
+        slowcntr=0;
         isrcom.Bits.gotfreq=0;
         isrcom.Bits.gotpf=false;
     }
@@ -714,233 +715,87 @@ void readintad(bool initrq){
             sumbuf[11]+=ADC1BUFB;
             sumbuf[12]+=ADC1BUFC;
             sumbuf[13]+=ADC1BUFD;            
-    //temp. readings, tank, oil pressure and water leak readings, average over 1024 samples;
-            if(TESTBIT(++slowcntr,10)){
-                sumbuf[0]>>=10;     //oil pressure
-                sumbuf[2]>>=10;     //Tank
-                sumbuf[3]>>=10;     //water leak
-                for(i=6;i!=14;i++)  //remaining temperatures
-                    sumbuf[i]>>=10;            
+            
+            if(++slowcntr>63){
                 slowcntr=0;
-                SETBIT(tx0101.val.mwordlow,12);         
-    //any temp. sensor that is not connected or not enabled will be forced to zero. This does not affect bit 12 of messageword!            
-                if(TESTBIT(tx0130.val.sensconfig_l,0))
-                    tx0101.val.tcoolin=gettemp(&sumbuf[9],tch_e);    //this call will clear sumbuf[i]
-                else
-                    tx0101.val.tcoolin=sumbuf[9]=0;
-
-                if(TESTBIT(tx0130.val.sensconfig_l,1))
-                    tx0101.val.tcoolout=gettemp(&sumbuf[13],tch_e);    
-                else
-                    tx0101.val.tcoolout=sumbuf[13]=0;
-
-                if(TESTBIT(tx0130.val.sensconfig_l,3)){
-                    tx0101.val.tcylhead=gettemp(&sumbuf[6],tch_e); 
-                    if(tx0101.val.tcylhead<3)
-                        SETBIT(STATWRDL,15);
-                    else
-                        CLEARBIT(STATWRDL,15);
+                for(i=0;i!=14;i++){
+                    adc[i]=sumbuf[i]>>6;
+                    sumbuf[i]=0;
                 }
-                else{
-                    tx0101.val.tcylhead=sumbuf[6]=0;
-                    CLEARBIT(STATWRDL,15);
-                }
-
-                if(TESTBIT(tx0130.val.sensconfig_l,4)){
-                    tx0101.val.tbearing=gettemp(&sumbuf[7],tch_e); 
-                    if(tx0101.val.tbearing<3)
-                         SETBIT(STATWRDH,0);
-                    else
-                        CLEARBIT(STATWRDH,0);
-                }
-                else{
-                    tx0101.val.tbearing=sumbuf[7]=0;
-                    CLEARBIT(STATWRDH,0);
-                }
-                    
-                if(TESTBIT(tx0130.val.sensconfig_l,5)){
-                    tx0101.val.texhaust=gettemp(&sumbuf[8],tch_e);
-                    if(tx0101.val.texhaust<3)
-                        SETBIT(MSGWRDH,7);
-                    else
-                        CLEARBIT(MSGWRDH,7);
-                }
-                else{
-                    tx0101.val.texhaust=sumbuf[8]=0;
-                    CLEARBIT(MSGWRDH,7);
-                }
+            }     
+            if(TESTBIT(tx0130.val.sensconfig_l,0))
+                tx0101.val.tcoolin=gettemp(adc[9],tch_e);  
+            else tx0101.val.tcoolin=255;
+            
+            if(TESTBIT(tx0130.val.sensconfig_l,9))
+                tx0101.val.tcoolout=gettemp(adc[13],tch_e);   
+            else tx0101.val.tcoolout=255;
+            
+            if(TESTBIT(tx0130.val.sensconfig_l,2))
+                tx0101.val.tcylhead=gettemp(adc[6],tch_e); 
+            else tx0101.val.tcylhead=255;
+            
+            if(TESTBIT(tx0130.val.sensconfig_l,1))
+                tx0101.val.tbearing=gettemp(adc[7],tch_e); 
+            else tx0101.val.tbearing=255;
                 
-                if(TESTBIT(tx0130.val.sensconfig_l,6)){   //all 3 coil sensors
-                    tx0101.val.tcoil1=gettemp(&sumbuf[10],tch_e);
-                    tx0101.val.tcoil2=gettemp(&sumbuf[11],tch_e);
-                    tx0101.val.tcoil3=gettemp(&sumbuf[12],tch_e);
-                    if((tx0101.val.tcoil1<3)&&(tx0101.val.tcoil2<3)&&(tx0101.val.tcoil3<3))
-                        SETBIT(STATWRDH,2);
-                    else
-                        CLEARBIT(STATWRDH,2);   
+
+            if(TESTBIT(tx0130.val.sensconfig_l,3))
+                tx0101.val.texhaust=gettemp(adc[8],tch_e);
+            else tx0101.val.texhaust=255;
+
+            if(TESTBIT(tx0130.val.sensconfig_l,4)){  
+                coiltemp[0]=gettemp(adc[10],tch_e);
+                coiltemp[1]=gettemp(adc[11],tch_e);
+                coiltemp[2]=gettemp(adc[12],tch_e);
+//find hottest coil temp. 
+                tx0101.val.tcoil=0;
+                for(i=0;i!=3;i++)
+                    if(coiltemp[i]!=255)
+                        if(coiltemp[i]>tx0101.val.tcoil)
+                            tx0101.val.tcoil=coiltemp[i];
+                if(tx0101.val.tcoil==0)
+                    tx0101.val.tcoil=255;       //all sensors failed
                 }
-                else{
-                    tx0101.val.tcoil1=tx0101.val.tcoil2=tx0101.val.tcoil3=
-                            sumbuf[10]=sumbuf[11]=sumbuf[12]=0;
-                    CLEARBIT(STATWRDH,2);
-                }
-                //clear any "missing sensor" bits if VCS temperature is low
-                if(tx0101.val.tvcs<NOSENSOR){
-                    tx0101.val.stwordlow&=0x7FFF;
-                    tx0101.val.stwordhigh&=0xFFF8;
-                }
-                
-                
-    //engine oil and VCS temperatures will be dealt with in external ADC reading            
-                tx0101.val.wladc=sumbuf[3];       //will load water leak reading in any case, even if disabled
-//                tx0101.val.wladc=0;                 //this function disabled
-                sumbuf[3]=0;
-                //update oil pressure sensor
-                if(TESTBIT(tx0130.val.sensconfig_l,10)&&(!TESTBIT(tx0101.val.stwordlow,3))
-                            &&(!TESTBIT(tx0101.val.stwordlow,2))){//will not calculate oil pressure if sensor is disabled or if the VCS is not calibrated or not programmed
-                    if(TESTBIT(tx0130.val.genconfig_l,9)){    //sensor is resistive; translate sumbuf[0] into resistance in ohms, based on biasing resistor 1kOhm
-                        if(sumbuf[0]>1023)
-                            sumbuf[0]=1023;
-                        if(sumbuf[0]<1024)
-                            rx=(uint32_t)(sumbuf[0])*270/(1024-sumbuf[0]);      //uses biasing resistor 270R
-                        sumbuf[0]=0;
-                        if(RPOILH>RPOILL){
-                            if(rx>=RPOILH)
-                                checkoilfail(false);
-                            else{
-                                checkoilfail(true);
-                                if(rx<=RPOILL)
-                                    tx0101.val.poil=OILPRL;
-                                else
-                                    tx0101.val.poil=OILPRL+(uint32_t)(rx-RPOILL)
-                                            *(OILPRH-OILPRL)/(RPOILH-RPOILL);
-                            }
-                        }
-                        else if(RPOILL>RPOILH){
-                            if(rx>=RPOILL)
-                                checkoilfail(false);
-                            else{
-                                checkoilfail(true);
-                                if(rx<=RPOILH)
-                                    tx0101.val.poil=OILPRH;
-                                else
-                                tx0101.val.poil=OILPRL+(uint32_t)(RPOILL-rx)*
-                                        (OILPRH-OILPRL)/(RPOILL-RPOILH);
-                            }
-                        }
-                    }
-                    else{//active sensor is enabled. Supply is not measured, so always assume it is exactly 5V
-                         //will multiply voltage by 2 (shift by 9 only) because of resistive divider made up by R23/R24
-                         //Data sheet formula translates to calculation in units of 100mbar into
-                        //p=125*Vx/Vcc-12.5; for subtraction of 12.5 first a ratio of 10fold will be used
-                        
-                        if(sumbuf[0]>1023)
-                            sumbuf[0]=1023;
-                        
-                        sumbuf[0]=((sumbuf[0]*VREFL*1250)>>9)/5000;//translate into voltage sensed at sensor, unit 1mV. Assume supply is 5000mV
-                        if(sumbuf[0]>125){
-                            sumbuf[0]=(sumbuf[0]-125)/10;
-                            tx0101.val.poil=(uint8_t)(sumbuf[0]);
-                        }
-                        else
-                            tx0101.val.poil=0;
-                        sumbuf[0]=0;
-                        if(tx0101.val.poil>tx0130.val.mxoil)
-                            checkoilfail(false);
-                        else
-                            checkoilfail(true);
-                    }
-                }
-                else{
-                    tx0101.val.poil=255;//Oil pr. sensor is not enabled or calibration data is junk
-                    sumbuf[0]=0;
-                }
-                if(TESTBIT(SENSCFGL,8)&&(!TESTBIT(tx0101.val.stwordlow,2))){
-                    //translate sumbuf[2] into resistance in ohms, based on biasing resistor 1kOhm
-                        if(sumbuf[2]>=1023)
-                            tx0101.val.tank=250;
-                        else{
-                            rx=(uint32_t)(sumbuf[2])*1000/(1024-sumbuf[2]);    
-                            sumbuf[2]=0;
-                            if(tx0130.val.rtkfull>tx0130.val.rtkempty){
-                                if((rx>=tx0130.val.rtkfull)||(rx<=tx0130.val.rtkempty))
-                                    tx0101.val.tank=250;
-                                else
-                                    tx0101.val.tank=(rx-tx0130.val.rtkempty)*200/(tx0130.val.rtkfull-tx0130.val.rtkempty);
-                            }
-                            else if(tx0130.val.rtkempty>tx0130.val.rtkfull){
-                                if((rx>=tx0130.val.rtkempty)||(rx<=tx0130.val.rtkfull))
-                                    tx0101.val.tank=250;
-                                else
-                                    tx0101.val.tank=(tx0130.val.rtkempty-rx)*200/(tx0130.val.rtkempty-tx0130.val.rtkfull);
-                            }
-                        }
-                }
-                else{
-                    tx0101.val.tank=255;  //tank sensor is disabled
-                    sumbuf[2]=0;
-                }
+                else tx0101.val.tcoil=255;
+//water leak reports ground fan breaker on or off            
+            if(TESTBIT(tx0130.val.genconfig_h,3)){
+                if(adc[3]>256)
+                    SETBIT(tx0101.val.stwordhigh,10);
+                else if(!stfeedb.fields.alpending)
+                    CLEARBIT(tx0101.val.stwordhigh,10);
             }
-            //battery voltage and actuator current and voltage will be averaged over 127 cycles;
-            if(TESTBIT(++fastcntr,7)){
-                //will maintain actual data in tx0132, calib. frame, at all time
-                adcbat=sumbuf[1]>>7;
-                adc5v=sumbuf[4]>>7;
-                if(!(TESTBIT(tx0101.val.stwordlow,2)||TESTBIT(tx0101.val.stwordlow,3))){ //will not run this code if VCS is not calibrated or programmed
-                    tx0101.val.ubatt=(int32_t)((((sumbuf[1]>>7)*VREFL)>>10)*17/10)
-                            *tx0131.val.battfact/1000+tx0131.val.ubatoffs;
-                    if((tx0101.val.ubatt>BATMIN)&&(tx0101.val.ubatt<BATMAX)){
-                        LATCCLR=0x2000; //turn on DC-DC-converter
-                        if(dcdcfailed){
-                            readextadc(true);
-                            dcdcfailed=false;
-                        }                        
-                        if(!stfeedb.fields.alpending)
-                            CLEARBIT(STATWRDH,3);
-                    }
-                    else{
-                        LATCSET=0x2000; //turn off the DC-DC converter
-                        SPI4CONbits.ON=0;
-                        if(gencontrstate==GENCONTR_STATE_CRANKING){
-                            if(dcdcfailed){
-                                if((t_1ms-tfaildcdc)>3000)  //voltage needs to recover within 3 seconds from first low detection
-                                    SETBIT(STATWRDH,3);
-                            }
-                            else{
-                                dcdcfailed=true;
-                                tfaildcdc=t_1ms;
-                            }
-                        }
-                        else{
-                            dcdcfailed=true;
-                            SETBIT(STATWRDH,3);
-                        }
-                    }
-                    sumbuf[1]=0;
-                    sumbuf[4]>>=7;
-                    sumbuf[5]>>=7;
-                    tx0101.val.actu=(uint32_t)(((sumbuf[4])*VREFL)>>10)*3426/10000;
-                    if(!linact){
-                        if(sumbuf[5]>sumbuf[4])
-                            tx0101.val.acti_pwmout=0;
-                        else if((!PORTAbits.RA6)||(OC5CONbits.ON))       
-                            tx0101.val.acti_pwmout=(((((sumbuf[4]-sumbuf[5])*VREFL)>>10)/10)*(604+249)/249)*455/100;  //this is delta U across R112 in units of 10mV. Then multiply with 4.55 because of sense resistor 0R22.
-                        else
-                            tx0101.val.acti_pwmout=0;
-                        isrcom.Bits.actidone=1;
-                    }
-                    else
-                        isrcom.Bits.actidone=1;
-                    
-                    
-                    isrcom.Bits.actidone=1;
-                    sumbuf[4]=sumbuf[5]=0;
-                    fastcntr=0;
-                    actcheck();
+            if(TESTBIT(tx0130.val.sensconfig_l,5)){  //active sensor is enabled. Supply is not measured, so always assume it is exactly 5V will multiply voltage by 2 (shift by 9 only) because of resistive divider made up by R23/R24
+                                                    //Data sheet formula translates to calculation in units of 100mbar into p=125*Vx/Vcc-12.5; for subtraction of 12.5 first a ratio of 10fold will be used    
+                adc[0]=(((uint32_t)adc[0]*VREFL*1250)>>9)/5000;//translate into voltage sensed at sensor, unit 1mV. Assume supply is 5000mV
+                if(adc[0]>125){
+                    adc[0]=(adc[0]-125)/10;
+                    tx0101.val.poil=(uint8_t)(adc[0]);
                 }
                 else
-                    fastcntr=sumbuf[1]=sumbuf[4]=sumbuf[5]=0;
+                    tx0101.val.poil=0;
             }
+            else 
+                tx0101.val.poil=255;
+            if(TESTBIT(tx0130.val.sensconfig_l,6)){
+                tx0101.val.tankres=(uint32_t)adc[2]*300/(1024-adc[2]);      //biasing resistor s 300Ohm
+                calctank();
+            }
+            tx0101.val.ubatt=(int32_t)adc[1]*VREFL*17/10;
+            if(tx0101.val.ubatt<BATMIN){
+                if(gencontrstate==GENCONTR_STATE_CRANKING)
+                    readextadc(true);       //initialize SPI 4
+                else SETBIT(tx0101.val.stwordlow,3);   
+            }
+            else if(stfeedb.fields.alpending)
+                CLEARBIT(tx0101.val.stwordlow,3); 
+            tx0101.val.actu=(uint32_t)adc[4]*VREFL*3426/10000;
+            if(adc[5]>adc[4])
+                tx0101.val.acti=0;
+            else
+                tx0101.val.acti=((((adc[4]-adc[5])*VREFL))/10*(604+249)/249)*455/100;  //this is delta U across R112 in units of 10mV. Then multiply with 4.55 because of sense resistor 0R22.
+            isrcom.Bits.actidone=1;
+
             AD1CON1bits.ASAM=1;
             AD1CON1bits.SAMP=1;             //restart sampling
         }
@@ -1031,17 +886,14 @@ void checkoilfail(bool clear){
 
 
 //will return temperature in degree celsius related to -20deg if *intex points to internal temp, otherwise related to -50deg.c
-uint8_t gettemp(uint32_t *rx, uint16_t *intex){
-    uint8_t i=1;
-    if(*rx>*intex)
-        i=0;
-    else while((*rx<=*intex)&&(*intex!=0)){
+int16_t gettemp(uint16_t adcx, uint16_t *table){
+    int16_t i=*table++;
+    if(adcx<*table++)       //sensor shorted
+        return(255);
+    else if(adcx<*table)    //sensor not connected
+        return(255);
+    else while(adcx<=*table++)
         i++;
-        intex++;
-    }
-    if(!i)
-        CLEARBIT(tx0101.val.mwordlow,12);
-    *rx=0;
     return(i);
 }
 
@@ -1059,35 +911,22 @@ void actcheck(void){
                              //bit 7 is battery voltage high, shutdown
                              //bit 8 shows actuator is hitting limits while operating
     static uint32_t tdelayact[8];   //timer order same as bit order
-    
-    if(!linact){
-        if(delaycheck(tx0101.val.acti_pwmout,ACTIMAXW,100, &tdelayact[0],&stat,0,true))
-            SETBIT(C_WARN,13);     //ACT. CURRENT HIGH 
+        if(delaycheck(tx0101.val.acti,ACTIMAXW,100, &tdelayact[0],&stat,0,true) ||
+                delaycheck(tx0101.val.actu,ACTUMINW,500, &tdelayact[2],&stat,2,false) ||
+                delaycheck(tx0101.val.actu,ACTUMAXW,500, &tdelayact[3],&stat,3,true)
+                )
+            SETBIT(tx0101.val.codeWarn,13);     //ACT. CURRENT HIGH 
         else
-            CLEARBIT(C_WARN,13);
-        if(delaycheck(tx0101.val.acti_pwmout,ACTIMAXO,D_MAXACT, &tdelayact[1],&stat,1,true))
-            SETBIT(C_ALM,13);      
+            CLEARBIT(tx0101.val.codeWarn,13);
+    
+        if(delaycheck(tx0101.val.acti,ACTIMAXO,D_MAXACT, &tdelayact[1],&stat,1,true) || 
+                delaycheck(tx0101.val.actu,ACTUMAXO,D_MAXACT, &tdelayact[4],&stat,4,true))
+            SETBIT(tx0101.val.codeAlm,13);     
         else if(!AL_PENDING)
-            CLEARBIT(C_ALM,13);
-    }
-    
-    if(delaycheck(tx0101.val.actu,ACTUMINW,500, &tdelayact[2],&stat,2,false))
-        SETBIT(MSGWRDL,13);     //act. voltage low
-    else
-        CLEARBIT(MSGWRDL,13);
-    
-    if(delaycheck(tx0101.val.actu,ACTUMAXW,500, &tdelayact[3],&stat,3,true))
-        SETBIT(C_WARN,15);         //act. voltage high
-    else
-        CLEARBIT(C_WARN,15);
-    
-     if(delaycheck(tx0101.val.actu,ACTUMAXO,D_MAXACT, &tdelayact[4],&stat,4,true))
-        SETBIT(C_ALM,15);
-    else if(!AL_PENDING)
-        CLEARBIT(C_ALM,15);
-    
+            CLEARBIT(tx0101.val.codeAlm,13);
+
     if(delaycheck(tx0101.val.ubatt,tx0130.val.udcloww,100, &tdelayact[5],&stat,5,false))
-        SETBIT(MSGWRDL,0);     //batt. voltage low
+        SETBIT(tx0101.val.miscwordlow,0);     //batt. voltage low
     else
         CLEARBIT(tx0101.val.mwordlow,0);
     
@@ -1126,7 +965,6 @@ void slowreadcheck(bool eovcs,bool init){
                                 //bit 15 is emergency stop (shutdown only)
     
     static uint32_t tw[16],ta[16];
-    uint16_t hotcoil;
     uint16_t deloil;
     static uint32_t delay_temps,d_tank;
     if(init){
@@ -1202,26 +1040,7 @@ void slowreadcheck(bool eovcs,bool init){
         else
             CLEARBIT(tx0101.val.mwordlow,11);
         
-        if(TESTBIT(SENSCFGL,9)){//water leak trigger is fix delayed 500ms
-            if(TESTBIT(GENCFGL,7)){ //monitor fan breaker
-                CLEARBIT(tx0101.val.stwordlow,6);   //no water leak in such case
-                if(delaycheck(tx0101.val.wladc,tx0130.val.wleaktrig,500,&ta[5],&sta,5,true))
-                    SETBIT(tx0101.val.stwordlow,0);
-                else if(!stfeedb.fields.alpending)
-                    CLEARBIT(tx0101.val.stwordlow,0);
-            }
-            else{   //monitor water leak
-                CLEARBIT(tx0101.val.stwordlow,0);   //no fan breaker alarm in such case
-                if(delaycheck(tx0101.val.wladc,tx0130.val.wleaktrig,500,&ta[5],&sta,5,false))
-                    SETBIT(tx0101.val.stwordlow,6);
-                else if(!stfeedb.fields.alpending)
-                    CLEARBIT(tx0101.val.stwordlow,6);
-            }
-        }
-        else{
-            CLEARBIT(tx0101.val.stwordlow,6);
-            CLEARBIT(tx0101.val.stwordlow,0);
-        }
+        
         if(TESTBIT(GENCFGL,0)){  //radiator fan monitoring is enabled
             if(PORTAbits.RA7){
                 if(TESTBIT(sta,6)){
@@ -1308,18 +1127,11 @@ void slowreadcheck(bool eovcs,bool init){
         else if(!stfeedb.fields.alpending)
             CLEARBIT(tx0101.val.codeAlm,6);     
         
-        if(tx0101.val.tcoil1>tx0101.val.tcoil2)
-            hotcoil=tx0101.val.tcoil1;
-        else
-            hotcoil=tx0101.val.tcoil2;
-        if(tx0101.val.tcoil3>hotcoil)
-            hotcoil=tx0101.val.tcoil3;
-        
-        if(delaycheck(hotcoil,tx0130.val.coilw,500,&tw[13],&stw,13,true))
+        if(delaycheck(tx0101.val.tcoil,tx0130.val.coilw,500,&tw[13],&stw,13,true))
             SETBIT(tx0101.val.codeWarn,11);
         else
             CLEARBIT(tx0101.val.codeWarn,11);
-        if((gencontrstate==GENCONTR_STATE_INRUN)&&(delaycheck(hotcoil,tx0130.val.coilo,delay_temps,&ta[13],&sta,13,true)))
+        if((gencontrstate==GENCONTR_STATE_INRUN)&&(delaycheck(tx0101.val.tcoil,tx0130.val.coilo,delay_temps,&ta[13],&sta,13,true)))
             SETBIT(tx0101.val.codeAlm,11);
 
         else if(!stfeedb.fields.alpending)
@@ -1658,19 +1470,19 @@ void readextadc(bool init){//will process external ADC reading
     uint16_t uhv;
     uint8_t i;
     if(init){
-        if(!TESTBIT(STATWRDH,3)){
+        if(!TESTBIT(tx0101.val.stwordlow,3)){
             resetacchans();
             s4fails=uhv=tx0101.val.tcomp=0;
             UAC1=UAC2=UAC3=IAC1=IAC2=IAC3=0;
         }
     }
-    else if((TESTBIT(STATWRDH,3))||isrcom.Bits.spi4fail){//ADC sensing is disabled because of voltage problems. Routine readintad will fix this
+    else if((TESTBIT(tx0101.val.stwordlow,3))||isrcom.Bits.spi4fail){//ADC sensing is disabled because of voltage problems. Routine readintad will fix this
         resetacchans();
         UAC1=UAC2=UAC3=IAC1=IAC2=IAC3=0;
         tx0101.val.tcomp=uhv=0;
-        if(isrcom.Bits.spi4fail)
-            if(++s4fails>10)
-                SETBIT(STATWRDL,14);
+//        if(isrcom.Bits.spi4fail)
+//            if(++s4fails>10)
+//                SETBIT(STATWRDL,14);
     }
     else{
 //if any ADC channel is found erratic then that channel will be cleared, reading will be set to zero and messageword bit 18 will be set       
@@ -1747,8 +1559,8 @@ void readextadc(bool init){//will process external ADC reading
                     tx0101.val.tcomp=80;
 #else
                     if(adcch[7].adccntr==64){
-                        rxclc=(uint32_t)(adcch[7].adcdata>>6);
-                        tx0101.val.tcomp=gettemp(&rxclc,tch_ehs);
+                        rxclc=(uint16_t)(adcch[7].adcdata>>6);
+                        tx0101.val.tcomp=gettemp(rxclc,tch_ehs);
                         if(tx0101.val.tcomp)
                             tx0101.val.tcomp+=36;       //for valid data add 36 to meet offset of -20. Lowest readable comp. temp. is 16 deg. C
                         adcch[7].adccntr=adcch[7].adcdata=0;
@@ -2125,7 +1937,6 @@ bool savbuf(uint16_t adr){
         passed=false;
         cntx=0;
         tx0101.val.statvar=gencontrstate|(stfeedb.bts[0]<<8);
-        tx0101.val.comstat=usbstat|(cancomstate<<8);
         while(!passed && (cntx<3)){
             writeeeprom(adr,tx0101.trans,35);
             cntx++;
@@ -2259,11 +2070,6 @@ void alltest(void){
             SETBIT(tx0101.val.stwordlow,5);
         else
             CLEARBIT(tx0101.val.stwordlow,5);
-//evaluate water leak
-        if(tx0101.val.wladc<tx0130.val.wleaktrig)
-            SETBIT(tx0101.val.stwordlow,6);
-        else
-            CLEARBIT(tx0101.val.stwordlow,6);
 //evaluate remote power up
         if(PORTDbits.RD5 || pan_estop)
             SETBIT(STATWRDH,4);
@@ -2629,7 +2435,7 @@ static bool checkstoprq(void){
 }
 
 void procu17(void){
-    static uint32_t rxvcs,rxengoil;
+    static uint16_t rxvcs,rxengoil;
     static uint8_t vcscntr,oilcntr;
     static bool isint,inof;
     static uint32_t tmrx;
@@ -2647,7 +2453,7 @@ void procu17(void){
                     rxvcs+=adres;
                     if(++vcscntr==64){
                         rxvcs>>=6;
-                        tx0101.val.tvcs=gettemp(&rxvcs,tch_i);
+                        tx0101.val.tvcs=gettemp(rxvcs,tch_i);
                         rxvcs=vcscntr=0;
                     }
                     isint=false;
@@ -2659,7 +2465,7 @@ void procu17(void){
                     rxengoil+=adres;
                     if(++oilcntr==64){
                         rxengoil>>=6;
-                        tx0101.val.tengoil=gettemp(&rxengoil,tch_o);
+                        tx0101.val.tengoil=gettemp(rxengoil,tch_o);
                         rxengoil=oilcntr=0;
                     }
                     isint=true;
@@ -2896,7 +2702,7 @@ bool actcalib(bool init){
                 if(((t_1ms-tmx)>4)&&(isrcom.Bits.actidone)){
                     isrcom.Bits.actidone=false;
                     tmx=t_1ms;
-                    if(tx0101.val.acti_pwmout<ACTIMAXW){
+                    if(tx0101.val.acti<ACTIMAXW){
                         if(golow){
                             if(bldc){
                                 if(OC5RS<=(limactlowspeed-STEPMOVE))
@@ -3035,4 +2841,45 @@ bool testservo(bool up){
         return(up);
     }
     else return(false);
+}
+
+
+//will calculate tank level. Will also set tank alarm level
+//allow a hysteresis of 10% on scale ends, prior to indicating fault
+void calctank(void){
+    static uint32_t tklim;
+    static bool tkal;
+    CLEARBIT(tx0101.val.mwordhigh,2);
+    if(tx0130.val.rtkempty==tx0130.val.rtkfull)
+        tx0101.val.tank=255;       
+    else if(tx0130.val.rtkfull<tx0130.val.rtkempty){        //res. at full tank is lowest
+        if(tx0101.val.tankres<=tx0130.val.rtkfull)
+            tx0101.val.tank=100;       //full tank
+        else if(tx0101.val.tankres>=tx0130.val.rtkempty)
+            tx0101.val.tank=0;
+        else
+            tx0101.val.tank=(uint32_t)(100)*(tx0130.val.rtkempty-tx0101.val.tankres)/(tx0130.val.rtkempty-tx0130.val.rtkfull);
+    }
+    else{   //res at empty tank is lowest
+        if(tx0101.val.tankres<=tx0130.val.rtkempty)
+            tx0101.val.tank=0;
+        else if(tx0101.val.tankres>=tx0130.val.rtkfull)
+            tx0101.val.tank=100;
+        else
+            tx0101.val.tank=(uint32_t)(100)*(tx0101.val.tankres-tx0130.val.rtkempty)/(tx0130.val.rtkfull-tx0130.val.rtkempty);
+    }
+    if(tx0101.val.tank<tx0130.val.tankw){
+        if(tkal){
+            if((t_1ms-tklim)>(tx0130.val.d_tankw*1000))
+                SETBIT(tx0101.val.mwordlow,4);
+        }
+        else{
+            tkal=true;
+            tklim=t_1ms;
+        }
+    }
+    else{
+        CLEARBIT(tx0101.val.mwordlow,4);;
+        tkal=false;
+    }
 }

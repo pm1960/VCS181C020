@@ -746,22 +746,6 @@ bool txtrans(uint16_t rqtrans, uint8_t *bf){
                     }
                     break;
                     
-                case 0x0132:
-                    if(getemptymf(&k)){
-                        mfr[k].dset=seq0132=(seq0132+0x20)&0xE0;
-                        mfr[k].length=16;
-                        mfr[k].idword=0x0132;
-                        mem2trans(4,0x01D8,&mfdata[k][0],false);        
-                        mfdata[k][8]=adcbat;          //will always transmit actual readings, instead of  what is in memory!
-                        mfdata[k][9]=adcbat>>8;
-                        mfdata[k][10]=adc5v; 
-                        mfdata[k][11]=adc5v>>8; 
-                        mem2trans(2,0x01A0,&mfdata[k][12],false);
-                        mfr[k].status=TX_REQ;
-                        retval=true;
-                    }
-                    break;
-                    
                 case 0x0138:
                     if(getemptymf(&k)){
                         mfr[k].dset=seq0138=(seq0138+0x20)&0xE0;

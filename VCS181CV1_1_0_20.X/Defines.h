@@ -14,7 +14,7 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-#define     SWVER  0x01010013       //format is uint64-T
+#define     SWVER  0x01010014       //format is uint64-T
 #define     PROTREL 0x0002
 
 //initial SW version 01.01.0000 First delivery Jan. 2016
@@ -60,6 +60,8 @@ extern "C" {
 //1.1.0.18  04/16/2023  Changed code to run test routine according to the actuator that was programmed
     
 //1.1.0.19  01/09/2023  Added option to program BLDC actuator
+    
+//1.1.0.20  03/08/2026  Modified memory access 
     
     
 //definition to avoid plib warnings

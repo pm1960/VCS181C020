@@ -9,6 +9,7 @@ static void setWRENlatch(void);
 static void swosc(unsigned char osc);
 static void erasmem(bool almem);
 static uint32_t newcaldat(uint16_t days);
+static inline uint16_t rwspi16(uint16_t sendx);
 
 //will check whether the VCS has valid service notifications in memory. If so then bits in valsvn will be set. In order to be valid next operating time 
 //and next cal. trigger time must not be 0xFFFFFFFF
@@ -45,32 +46,26 @@ uint32_t get4bytes( uint8_t *strg){
 //or from an address outside memory range. Will return true if read went well. Will not block for more than 5ms
 bool readeeprom(uint16_t adr,uint16_t *buf,uint16_t len){
     bool wip=true;
-    uint16_t dm;
+    uint16_t bf;
     uint32_t tmrx=t_1ms;
     if(TESTBIT(adr,0)||(adr>(MEMSIZE*2-2))||(!len)||((adr/2+len)>MEMSIZE))
         return(false);	//address violation or length is zero or longer than EEPROM
     else{
-        SPI1CONbits.MODE16=false;
-        SPI1CONbits.MODE32=false;
         LATDSET=0x1000; //pull CS high
         while(((t_1ms-tmrx)<5)&&(wip))
             wip=TESTBIT(readsr(),0);
         if(wip)
             return(false);//timeout while reading SR
-        else{   //will require buffer mode to be set to 8 bit width to transmit read command
+        else{   
             LATDCLR=0x1000;
             SPI1BUF=0x03;   //send read command
             while(SPI1STATbits.SPIBUSY);
-            dm=SPI1BUF;                 //dummy read
-            SPI1CONbits.MODE16=true;    //return to 16 bit communication
-            SPI1BUF=adr;
-            while(SPI1STATbits.SPIBUSY);
-            dm=SPI1BUF;                //dummy read
+            bf=SPI1BUF;                 //dummy read
+            bf=rwspi16(adr);
 //now finally do the entire read loop     
             while(len--){
-                SPI1BUF=dm;             //some dummy write to enforce reading
-                while(SPI1STATbits.SPIBUSY);
-                *buf++=SPI1BUF;
+                bf=rwspi16(bf);
+                *buf++=bf;
             }
             LATDSET=0x1000;
             return(true);
@@ -81,7 +76,7 @@ bool readeeprom(uint16_t adr,uint16_t *buf,uint16_t len){
 //will write data to EEPROM. Will return true if write went OK. Requires even addresses
 bool writeeeprom(uint16_t adr, uint16_t *buf, uint16_t len){
     uint32_t tmrx;
-    uint16_t dm;
+    uint16_t bf;
     bool inpage,wip=true;  
     LATDSET=0x1000;     //pull CS high
     if((!len)||(TESTBIT(adr,0))||(adr>(MEMSIZE*2-2))||((adr/2+len)>MEMSIZE))
@@ -89,8 +84,6 @@ bool writeeeprom(uint16_t adr, uint16_t *buf, uint16_t len){
     else{
         while(len){
             tmrx=t_1ms;
-            SPI1CONbits.MODE16=false;
-            SPI1CONbits.MODE32=false;
             while(((t_1ms-tmrx)<5)&&(wip))
                 wip=TESTBIT(readsr(),0);
             if(wip)
@@ -102,19 +95,15 @@ bool writeeeprom(uint16_t adr, uint16_t *buf, uint16_t len){
                 LATDCLR=0x1000;
                 SPI1BUF=2;      //send write command
                 while(SPI1STATbits.SPIBUSY);
-                dm=SPI1BUF;                //retrieve one dummy byte, then return to 16 bit width
-                SPI1CONbits.MODE16=true;
-                SPI1BUF=adr;
-                while(SPI1STATbits.SPIBUSY);
-                dm=SPI1BUF;                //retrieve one dummy word
+                bf=SPI1BUF;                //retrieve one dummy byte, then return to 16 bit width
+                bf=rwspi16(adr);
                 while(inpage&&len){
-                    SPI1BUF=*buf++;
+                    bf=*buf++;
+                    bf=rwspi16(bf);
                     len--;
                     adr+=2;
                     if(!(adr&(MEMPAGE-1)))
                         inpage=false;
-                    while(SPI1STATbits.SPIBUSY);
-                    dm=SPI1BUF;
                 }
                 LATDSET=0x1000;
             }
@@ -152,6 +141,18 @@ void setWRENlatch(void){
     LATDSET=0x1000;
 }
 
+//this function will read and write a 16bit word across the SPI1. It will NOT handle CS!. Data will be sent in big endian, as the SPI port would do if it was configured for >8bit
+static inline uint16_t rwspi16(uint16_t sendx){
+    uint16_t retval;
+    SPI1BUF=sendx>>8;
+    while(SPI1STATbits.SPIBUSY);
+    retval=SPI1BUF<<8;
+    SPI1BUF=sendx&0xFF;
+    while(SPI1STATbits.SPIBUSY);
+    retval |=SPI1BUF;
+    return(retval);
+}
+
 //will write below  string into *chx. Will fill remaining space with blanks. String will not be zero-terminated
 void serinval (uint8_t *chx){
     uint8_t i,cx[]="Generator serial No. is invalid";
@@ -185,7 +186,6 @@ void serinval (uint8_t *chx){
     LATDCLR=0xFFFF; //port down
     LATECLR=0xFFFF; //Port down
     LATGCLR=0xFFFF; //port down
-    
     
     OC5CONbits.ON=0;
     while((t_1ms-tmrx)<200);
@@ -511,28 +511,6 @@ void proginfo(uint8_t *dta){
     }  
     writeeeprom(0x01A4,&tx013A.val.runtl,2);
     writeeeprom(0x01D4,&tx013A.val.totalenl,2);
-}
-
-void calvcs(uint8_t *dta){
-    uint8_t i;
-    uint16_t dat[6];  
-    for(i=0;i!=4;i++){
-        dat[i]=*dta++;
-        dat[i]|=*dta++ <<8;
-    } 
- 
-    dat[4]=adcbat;
-    dat[5]=adc5v;
-    writeeeprom(0x01D8,dat,6);
-    
-    dta+=4;     //advance for data not pulled off the inbound frame    
-    dat[0]=*dta++;              //VCS serial number
-    dat[0]|=*dta++ <<8;
-    dat[1]=*dta++;
-    dat[1]|=*dta++ <<8;
-    writeeeprom(0x01A0,dat,2);
-       
-    writecal(0x01F0);
 }
 
 

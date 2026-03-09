@@ -6,8 +6,6 @@ void SYS_Tasks(void){
     static uint32_t tsystasks;
     uint8_t i;
     uint16_t rvx[4];
-    if(linact)
-        tx0101.val.acti_pwmout=(uint32_t)(OC2RS)*1000/PR2;
     remstart();
 
     if((t_1ms-tsystasks)>20000){    //re-test every 20 seconds
