@@ -101,98 +101,98 @@ endif
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: compile
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-${OBJECTDIR}/main.o: main.c  .generated_files/flags/default/57071db5899483e741d02d51c35d7cea2aa2d3f4 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/main.o: main.c  .generated_files/flags/default/23877027761bd2803d8d658749c688b84500327 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/main.o.d 
 	@${RM} ${OBJECTDIR}/main.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/main.o.d" -o ${OBJECTDIR}/main.o main.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/cpusetup.o: cpusetup.c  .generated_files/flags/default/1cee168e001edf945880441e49a47347af8b29db .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/cpusetup.o: cpusetup.c  .generated_files/flags/default/e6a55dd91b2a397aca485eac793429084b013e43 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/cpusetup.o.d 
 	@${RM} ${OBJECTDIR}/cpusetup.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/cpusetup.o.d" -o ${OBJECTDIR}/cpusetup.o cpusetup.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/sysint.o: sysint.c  .generated_files/flags/default/465bba0b37ceeb53050a98574f916e1ae3b964d2 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/sysint.o: sysint.c  .generated_files/flags/default/a98d4c92d0c1dfd2eb555e65e9849a74bf2f6e74 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/sysint.o.d 
 	@${RM} ${OBJECTDIR}/sysint.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/sysint.o.d" -o ${OBJECTDIR}/sysint.o sysint.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/auxfunc.o: auxfunc.c  .generated_files/flags/default/4f1ca2bdfbd6ed084319299a4ec58e04d43b8c01 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/auxfunc.o: auxfunc.c  .generated_files/flags/default/7935ed13a8bf488659a70d2b47f0b6184fbf231a .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/auxfunc.o.d 
 	@${RM} ${OBJECTDIR}/auxfunc.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/auxfunc.o.d" -o ${OBJECTDIR}/auxfunc.o auxfunc.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/CanCom.o: CanCom.c  .generated_files/flags/default/6a4172bb98ff9cdc49f2d06dcd6eeaa7c5750dcb .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/CanCom.o: CanCom.c  .generated_files/flags/default/a55c1d0797e0f4bd3c8378e4ac268e91dd8f4c58 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/CanCom.o.d 
 	@${RM} ${OBJECTDIR}/CanCom.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CanCom.o.d" -o ${OBJECTDIR}/CanCom.o CanCom.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/usbcom.o: usbcom.c  .generated_files/flags/default/1d8d8801995e3ccb18d328d4b4ba90c7b18982e3 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/usbcom.o: usbcom.c  .generated_files/flags/default/9e7318381ce98e00d358345e06c87339d3766b99 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/usbcom.o.d 
 	@${RM} ${OBJECTDIR}/usbcom.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/usbcom.o.d" -o ${OBJECTDIR}/usbcom.o usbcom.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/SYSTasks.o: SYSTasks.c  .generated_files/flags/default/945e61515d093836727a136f9c5cfbba92eac20b .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/SYSTasks.o: SYSTasks.c  .generated_files/flags/default/484d84bb51d951687554a5a3281d52770d104983 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/SYSTasks.o.d 
 	@${RM} ${OBJECTDIR}/SYSTasks.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/SYSTasks.o.d" -o ${OBJECTDIR}/SYSTasks.o SYSTasks.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/gencontr.o: gencontr.c  .generated_files/flags/default/c29e48cfc75a6640c204ce256cf015ca6e3c894 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/gencontr.o: gencontr.c  .generated_files/flags/default/8b9e202eba3e20edb7e4cc436dca86a93915a037 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/gencontr.o.d 
 	@${RM} ${OBJECTDIR}/gencontr.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/gencontr.o.d" -o ${OBJECTDIR}/gencontr.o gencontr.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
 else
-${OBJECTDIR}/main.o: main.c  .generated_files/flags/default/b4d1831d788578c8346cba777fba7b77d51b397c .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/main.o: main.c  .generated_files/flags/default/621106b951df748af317c5f882e5cb2d41cb5953 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/main.o.d 
 	@${RM} ${OBJECTDIR}/main.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/main.o.d" -o ${OBJECTDIR}/main.o main.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/cpusetup.o: cpusetup.c  .generated_files/flags/default/68ff20e2ce1cc45d291e125d743b91ba1f70bcac .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/cpusetup.o: cpusetup.c  .generated_files/flags/default/bc43ed07c46bf7415d2b3a62c008440f8237067b .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/cpusetup.o.d 
 	@${RM} ${OBJECTDIR}/cpusetup.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/cpusetup.o.d" -o ${OBJECTDIR}/cpusetup.o cpusetup.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/sysint.o: sysint.c  .generated_files/flags/default/7e76babd2b627b09d86556bd70f744a5bb1d645a .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/sysint.o: sysint.c  .generated_files/flags/default/ab10685259cb255fd3c18dbc8de10329059e6c86 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/sysint.o.d 
 	@${RM} ${OBJECTDIR}/sysint.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/sysint.o.d" -o ${OBJECTDIR}/sysint.o sysint.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/auxfunc.o: auxfunc.c  .generated_files/flags/default/e6722bd848d4934b638902daa712e13bc75ee2b5 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/auxfunc.o: auxfunc.c  .generated_files/flags/default/9db59ee5c3a3bc5ea55d615458cf7d38bf774dbc .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/auxfunc.o.d 
 	@${RM} ${OBJECTDIR}/auxfunc.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/auxfunc.o.d" -o ${OBJECTDIR}/auxfunc.o auxfunc.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/CanCom.o: CanCom.c  .generated_files/flags/default/e6e6406d7947b2cdaa72d9521633941f7149cf09 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/CanCom.o: CanCom.c  .generated_files/flags/default/62eba5b9236e3771dc8254bc460ad5be6b617cda .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/CanCom.o.d 
 	@${RM} ${OBJECTDIR}/CanCom.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CanCom.o.d" -o ${OBJECTDIR}/CanCom.o CanCom.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/usbcom.o: usbcom.c  .generated_files/flags/default/7c5c133c745c4e026b08bf5a2633ff2eaf98da60 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/usbcom.o: usbcom.c  .generated_files/flags/default/2734c7a8ad09bda8c965ebae0191cbb2f5d19935 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/usbcom.o.d 
 	@${RM} ${OBJECTDIR}/usbcom.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/usbcom.o.d" -o ${OBJECTDIR}/usbcom.o usbcom.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/SYSTasks.o: SYSTasks.c  .generated_files/flags/default/ff66c2f3b45862df6ea0c2735662e3a66a9bd3d2 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/SYSTasks.o: SYSTasks.c  .generated_files/flags/default/7fd923b0aa0d762db357bcf035410955bd05edac .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/SYSTasks.o.d 
 	@${RM} ${OBJECTDIR}/SYSTasks.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/SYSTasks.o.d" -o ${OBJECTDIR}/SYSTasks.o SYSTasks.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
-${OBJECTDIR}/gencontr.o: gencontr.c  .generated_files/flags/default/548122a45e58e3f5b91ab19dd59711f73063b551 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+${OBJECTDIR}/gencontr.o: gencontr.c  .generated_files/flags/default/4f776f02878ce9263d829f8aa3af37d2cf4e8f1e .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/gencontr.o.d 
 	@${RM} ${OBJECTDIR}/gencontr.o 

@@ -173,26 +173,7 @@ extern "C" {
     
 //this portion just to simplify coding
     
-//variable definitions
-#define C_WARN      tx0101.val.codeWarn
-#define C_ALM       tx0101.val.codeAlm
-#define MSGWRDL     tx0101.val.mwordlow
-#define MSGWRDH     tx0101.val.mwordhigh
-#define STATWRDL    tx0101.val.stwordlow
-#define STATWRDH    tx0101.val.stwordhigh   
-#define GENCFGL     tx0130.val.genconfig_l
-#define GENCFGH     tx0130.val.genconfig_h
-#define SENSCFGL    tx0130.val.sensconfig_l
-#define SENSCFGH    tx0130.val.sensconfig_h
-#define ALPTR       tx0131.val.alptr
-#define EVPTR       tx0131.val.evptr    
-#define UAC1        tx0101.val.uac1
-#define UAC2        tx0101.val.uac2    
-#define UAC3        tx0101.val.uac3
-#define IAC1        tx0101.val.iac1
-#define IAC2        tx0101.val.iac2    
-#define IAC3        tx0101.val.iac3    
-#define UACNOM      tx0130.val.uacnom    
+//variable definitions 
     
 //bit definitions
 #define AL_PENDING  stfeedb.fields.alpending    

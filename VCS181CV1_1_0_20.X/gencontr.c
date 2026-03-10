@@ -395,7 +395,7 @@ void GENCONTR_Tasks (void){
             else{ 
                 if(checksys()){
                     pidcontrol(regspeed,true,false);
-                    if(TESTBIT(GENCFGL,0)){         
+                    if(TESTBIT(tx0130.val.genconfig_l,15)){         
                         if(((tx0101.val.uac1+tx0101.val.uac2+tx0101.val.uac3)/3)>(tx0130.val.uacnom*8/10)){     //break loop if voltage is above 80% of nominal
                             gencontrstate=GENCONTR_STATE_WRMUP;
                             stfeedb.fields.statustime=t_1ms;
@@ -404,7 +404,7 @@ void GENCONTR_Tasks (void){
                         }
                         
                     }
-                    else if(((UAC1+UAC2)>>1)>(UACNOM*8/10)){
+                    else if(((tx0101.val.uac1+tx0101.val.uac2)>>1)>(tx0130.val.uacnom*8/10)){
                         gencontrstate=GENCONTR_STATE_WRMUP;
                         stfeedb.fields.statustime=t_1ms;
                         targvolt=tx0130.val.uacnom;

@@ -481,7 +481,7 @@ void progmirrored(uint8_t *dta){
     writeeeprom(0,tx0130.wrds,68);
     writecal(0x01E8);
     if(!checkmirrored(true))
-        SETBIT(STATWRDL,2);
+        SETBIT(tx0101.val.stwordlow,2);
 }
 
 void prognonmirrored(uint8_t *dta){
