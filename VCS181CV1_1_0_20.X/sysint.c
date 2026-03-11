@@ -313,7 +313,7 @@ void nextcx(void){
 void nextchan(void){
     if(++adcind==8)
         adcind=0;
-    if(!TESTBIT(GENCFGL,0)){ //skip third phase if single phase generator
+    if(!TESTBIT(tx0130.val.genconfig_l,15)){ //skip third phase if single phase generator
         if(adcind==2)
             adcind=3;
         else if(adcind==5)

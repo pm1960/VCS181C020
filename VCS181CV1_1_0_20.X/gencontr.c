@@ -13,7 +13,6 @@ uint32_t tdisch;          //discharge time for compenasion bank 0; bank 1 is dou
 static void readintad(bool initrq);
 static int16_t gettemp(uint16_t adcx, uint16_t *table);
 static void calctank(void);
-static void checkoilfail(bool clear);
 static void actcheck(void);
 static void slowreadcheck(bool eovcs,bool init);
 static bool delaycheck(uint16_t val, uint16_t limval, uint32_t delay, uint32_t *tmr,
@@ -83,7 +82,6 @@ void GENCONTR_Tasks (void){
             }
             SETBIT(tx0101.val.stwordhigh,3);      //will not allow the external ADC to come on with battery out of range
             ledstat=BLKSYNC;
-            checkoilfail(true);
             readintad(true);
             for(i=0;i!=13;i++)
                 isrcom.bts[i]=0;
@@ -688,9 +686,9 @@ void GENCONTR_Tasks (void){
 void readintad(bool initrq){
     uint8_t i;
     int16_t coiltemp[3];
-    static uint16_t sumbuf[14],lastfrq,tfaildcdc;
+    static uint16_t sumbuf[14],lastfrq;
     static uint16_t slowcntr;
-    static bool dcdcfailed,nextf;
+    static bool nextf;
     uint16_t rx,alfa,adc[14];
     if(initrq){
         for(i=0;i!=14;i++)
@@ -858,29 +856,6 @@ void readintad(bool initrq){
                 tx0101.val.pacr=tx0101.val.pac*200/tx0130.val.acpnom;
         }
         slowreadcheck(false,false);
-    }
-}
-
-
-
-
-//will delay faulty oil sensor detection by 2seconds
-void checkoilfail(bool clear){
-    static bool wasfault;
-    static uint32_t tfault;
-    if(clear){
-        wasfault=false;
-        CLEARBIT(tx0101.val.stwordlow,9);
-    }
-    else if(wasfault){
-        if((t_1ms-tfault)>2000){
-            SETBIT(tx0101.val.stwordlow,9);
-            CLEARBIT(tx0101.val.mwordlow,12);
-        }
-    }
-    else{
-        wasfault=true;
-        tfault=t_1ms;
     }
 }
 

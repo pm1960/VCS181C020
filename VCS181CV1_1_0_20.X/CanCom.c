@@ -4,7 +4,7 @@
 //service warnings (0x0140...0x015F) are not required to be integrated in this array, will always check for those
 uint16_t vcstrans[]={1,2,3,4,5,7,9,10,11,16,0x0100,0x0130,0x0138,0x013A,0x013B,0x013C,0};
 
-static bool canoff(void);
+static bool canoffon(void);
 static bool append2fifo0(CANTxMessageBuffer *msg);
 static bool append2fifo1(CANTxMessageBuffer *msg);
 static void readeidbuf(void);
@@ -29,42 +29,19 @@ void CANCOM_Tasks (void){
     bool cont;
     switch (cancomstate){
         case CAN_STATE_INIT:
-            if((t_1ms-tbusfail)>100){
-                if(!canoff()){
-                    cancomstate=CAN_STATE_HWIRESP;
-                    tbusfail=t_1ms;
-                    SETBIT(MSGWRDH,4);
-                }
-                else if(!initcan()){
-                    tbusfail=t_1ms;
-                    cancomstate=CAN_STATE_HWIRESP;
-                    SETBIT(MSGWRDH,4);
-                }
-                else{
-                    cancomstate=CAN_STATE_BUSOFF;
-                    tbus=t_1ms;
-                }
+            if(!canoffon())
+                cancomstate=CAN_STATE_HWIRESP;
+            else if(!initcan())
+                cancomstate=CAN_STATE_HWIRESP;
+            else{
+                cancomstate=CAN_STATE_BUSOFF;
+                tbus=t_1ms;
             }
             break;
             
         case CAN_STATE_BUSOFF:
-            if(((t_1ms-tbus)>CANOFF)&&(!stfeedb.fields.pwrdwn))
-                if(PORTDbits.RD7){
-                    cancomstate=CAN_STATE_TURNON;
-                    tbus=t_1ms;
-                    bf[0]=0x33;
-                    bf[1]=0xBB;
-                    bf[2]=0x55;
-                    bf[3]=0xAA;
-                    txtrans(2,bf);
-                    onpending=false;
-                }
-                else{
-                    if(!stfeedb.fields.pwrdwn)
-                        cancomstate=CAN_STATE_BUSON;
-                    else if((gencontrstate==GENCONTR_STATE_INIT)||(gencontrstate==GENCONTR_STATE_INITEND))
-                        SETBIT(MSGWRDL,6);
-                }
+                if((t_1ms-tbus)>CANOFF)
+                    cancomstate=CAN_STATE_BUSON;
             break;
             
         case CAN_STATE_TURNON:
@@ -197,23 +174,6 @@ bool txtransfer(uint16_t transferid, uint8_t *msg){
             break;
     }
     return(retval);
-}
-
-
-//this routine will turn off the CAN bus if it was on. If it is not successful it will return false
-bool canoff(void){
-    uint32_t tmrx;
-    if(C1CONbits.ON){
-        tmrx=t_1ms;
-        C1CONbits.REQOP=4;
-        while(((t_1ms-tmrx)<=10)&&(C1CONbits.OPMOD!=C1CONbits.REQOP));
-        if(C1CONbits.OPMOD!=C1CONbits.REQOP)
-            return(false);
-        else
-            return(true);
-    }
-    else
-        return(true);
 }
 
 //will initialize CAN 1 as internal CAN bus, standard protocol. Will return true if successful
@@ -640,32 +600,23 @@ bool txtrans(uint16_t rqtrans, uint8_t *bf){
             }
             break;
             
-        case 0x000A:    //regular calibration transfer
-            if(getemptysf(&k)){
-                readeeprom(0x01A0,rd,2);
-                sfr[k].idword=2;
-                sfr[k].status=TX_REQ;
-                for(i=0;i!=4;i++)
-                    sfr[k].buf[i]=0;
-                sfr[k].buf[4]=rd[0];
-                sfr[k].buf[5]=rd[0]>>8;
-                sfr[k].buf[6]=rd[1];
-                sfr[k].buf[7]=rd[1]>>8;
-                retval=true;
-            }
-            break;
-            
+        case 0x000A:
         case 0x000B:
             if(getemptysf(&k)){
-                sfr[k].idword=0x0B;
+                retval=true;
+                sfr[k].idword=rqtrans;
                 sfr[k].status=TX_REQ;
-                rd[0]=ALPTR;
-                rd[1]=EVPTR;
-                rd[2]=rd[3]=0xFFFF;
-                snk=&sfr[k].buf[0];
-                for(i=0;i!=4;i++){
-                    *snk++=rd[i];
-                    *snk++=rd[i]>>8;
+                if(rqtrans==0x000A)
+                    for(i=0;i!=4;i++){
+                        sfr[k].buf[2*i]=tx000A.trans[i];
+                        sfr[k].buf[2*i+1]=tx000A.trans[i]>>8;
+                    }
+                else{
+                    sfr[k].buf[0]=alptr;
+                    sfr[k].buf[1]=alptr>>8;
+                    sfr[k].buf[2]=evptr;
+                    sfr[k].buf[3]=evptr>>8;
+                    sfr[k].buf[4]=sfr[k].buf[5]=sfr[k].buf[6]=sfr[k].buf[7]=0xFF;
                 }
             }
             break;
@@ -1007,4 +958,24 @@ void forcepwrdwn(void){
         sfr[2].buf[i]=0xFF;
     stfeedb.fields.pwrdwn=true;
     nocan=1000;
+}
+
+//this routine will turn off the CAN bus if it was on. If it is not successful it will return false
+bool canoffon(void){
+    uint32_t tmrx;
+    tmrx=t_1ms;
+    C1CONbits.ON=false;
+    while(C1CONbits.CANBUSY && ((t_1ms-tmrx)>10));
+    if(C1CONbits.CANBUSY)
+        return(false);
+    else{
+        C1CONbits.ON=true;
+        tmrx=t_1ms;
+        C1CONbits.REQOP=4;
+        while(((t_1ms-tmrx)<=10)&&(C1CONbits.OPMOD!=C1CONbits.REQOP));
+        if(C1CONbits.OPMOD!=C1CONbits.REQOP)
+            return(false);
+        else
+            return(true);
+    }
 }

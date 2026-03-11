@@ -21,6 +21,7 @@ extern "C" {
 
 void cpusetup(void);
 void initcap(void);
+bool cpuinit(void);
 
 #ifdef	__cplusplus
 }

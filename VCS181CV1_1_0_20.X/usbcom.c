@@ -14,13 +14,11 @@ void usbcont(void){
                 tmrx=t_1ms;
                 usbstat=USBCOM_STATE_RESET;
                 usbreset();
-                SETBIT(MSGWRDL,4);
             }
             else{
                 U4MODE=0;
                 IEC2bits.U4RXIE=false;
                 IEC2bits.U4EIE=false;
-                CLEARBIT(MSGWRDL,4);
             }
             break;
             
@@ -285,24 +283,7 @@ void txtrans(uint16_t rqtransfer){
             u4txbuf[2]=rqtransfer;
             u4txbuf[3]=rqtransfer>>8;
             switch(rqtransfer){
-                
-                case 0x000A:
-                    u4txbuf[4]=15;
-                    for(i=0;i!=4;i++){
-                        u4txbuf[5+2*i]=tx000A.trans[i];
-                        u4txbuf[6+2*i]=tx000A.trans[i]>>1;
-                    }
-                    break;
-                
-                case 0x000B:
-                    u4txbuf[4]=13;      //having 6 bytes of payload data, 2 being don't care
-                    u4txbuf[5]=ALPTR;
-                    u4txbuf[6]=ALPTR>>8;
-                    u4txbuf[7]=EVPTR;
-                    u4txbuf[8]=EVPTR>>8;
-                    u4txbuf[9]=u4txbuf[10]=0xFF;
-                    break;  
-                
+
                 case 0x0100:
                    u4txbuf[4]=ldid(&u4txbuf[5])+7;
                    break;

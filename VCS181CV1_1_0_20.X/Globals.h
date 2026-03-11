@@ -272,6 +272,7 @@ union{
 }tx013A;     //info transfer
 
 uint16_t lasttrans;     //if waiting for a certain transfer, then CANCOM may use this variable to confirm it got that transfer
+uint16_t alptr,evptr;
 uint32_t caldate, now,enrem;  //used to keep track of time and date
 uint32_t confword0,confword1,valsvn;    //confirmation words,  
 uint16_t targvolt,pwmspeed,limactlowspeed,limacthighspeed;     //used to maintain floating target voltage; internal speed, for PWM regulation purpose. Limits for actuator movement

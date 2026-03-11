@@ -10,5 +10,21 @@
             <file>file:/C:/Users/19542/OneDrive/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/gencontr.c</file>
             <file>file:/C:/Users/19542/OneDrive/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/sysint.c</file>
         </group>
+        <group>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/cpusetup.h</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/cpusetup.c</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/auxfunc.c</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/StateDefinitions.h</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/Globals.h</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/Defines.h</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/auxfunc.h</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/usbcom.c</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/gencontr.c</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/main.c</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/SYSTasks.c</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/LookupTable.h</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/CanCom.c</file>
+            <file>file:/C:/Users/pmuell/Documents/GitHub/VCS181C020/VCS181CV1_1_0_20.X/sysint.c</file>
+        </group>
     </open-files>
 </project-private>

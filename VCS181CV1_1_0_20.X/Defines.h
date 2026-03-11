@@ -86,11 +86,8 @@ extern "C" {
 #define COLDVCS     40  //this is the threshold for low temperature issues: cranking time, idling time, oil pressure evaluation and flame start
 #define NOSENSOR    50  //this is the threshold VCS temperature to accept missing sensors    
  
-//memory allocation, data that shall not be overwritten    
-#define VCSSNLOC    0x01A0  //start of serial number
-#define VCSSNLEN    2       //number of memory locations (uint18) occupied by serial No
-#define CALDATALOC  0x01D8  //Start of calibration data
-#define CALDATALEN  6       //number of memory locations reserved for calibration data    
+#define VBATTMIN   1900
+#define VBATTMAX   3400    
     
     
 //Communication
