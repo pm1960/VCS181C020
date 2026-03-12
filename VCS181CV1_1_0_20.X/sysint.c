@@ -11,86 +11,64 @@ static void eval_dc(volatile DCCHANNEL *ptr,uint16_t res);
 
 static uint32_t lastpulse;
 
-void __ISR(_TIMER_1_VECTOR, IPL3SOFT) Timer1Handler(void){    //most frequent interrupt, use shadow register set
-    uint16_t pgx;
+void __ISR(_TIMER_1_VECTOR, IPL3SOFT) Timer1Handler(void){    
     if(!AD1CON1bits.ASAM){
         if(adccntr<64){             //below channel assignment refer to the configuration AFTER initialization, i.e. RB11 no lnger being quizzed
-            adchan[0]+=ADC1BUF0;    //multiplexer
-            adchan[1]+=ADC1BUF1;    //oil pressure
-            adchan[2]+=ADC1BUF2;    //battery voltage
-            adchan[3]+=ADC1BUF3;    //tank
+            adchan[0]+=ADC1BUF0;    //oil pressure
+            adchan[1]+=ADC1BUF1;    //battery voltage
+            adchan[2]+=ADC1BUF2;    //tank
+            adchan[3]+=ADC1BUF3;    //water leak
             adchan[4]+=ADC1BUF4;    //act. voltage upstream of the sense resistor
             adchan[5]+=ADC1BUF5;    //act. voltage downstream of the sense resistor
-            adchan[6]+=ADC1BUF6;    //board temperature
-            adchan[7]+=ADC1BUF7;    //oil temperature
-            if(++adccntr==64){      //step up multiplexer
-                if(++muxptr==7)
-                    muxptr=0;       //outside ISR the loop routine must be aware the MUX is pointing to the next higher input
-                pgx=(uint16_t)muxptr<<6;
-                LATGCLR=0x01C0;
-                LATGSET=pgx;
+            adchan[6]+=ADC1BUF6;    //cyl. head temperature
+            adchan[7]+=ADC1BUF7;    //alt. bearing temperature
+            adchan[8]+=ADC1BUF8;    //exh. manifold head temperature
+            adchan[9]+=ADC1BUF9;    //coolant in temperature
+            adchan[10]+=ADC1BUFA;    //coil 1  temperature
+            adchan[11]+=ADC1BUFB;    //coil 2  temperature
+            adchan[12]+=ADC1BUFC;    //coil 3  temperature
+            adchan[13]+=ADC1BUFD;    //coolant out temperature
             }
-        }
         AD1CON1bits.ASAM=1;
         AD1CON1bits.SAMP=1;
     }
     IFS0bits.T1IF=false;
 }
 
-void __ISR(_EXTERNAL_2_VECTOR, IPL4SOFT) INT2_Handler(void){        //voltage pulse
-    uint32_t thispulse;
-    uint16_t hi = TMR5;   // latches TMR4
-    uint16_t lo = TMR4;
-    thispulse = ((uint32_t)hi << 16) | lo;
-    v_period=lastpulse-thispulse;
-    lastpulse=thispulse;
-    isr_flags |= GOTUPULS;
-    IFS0bits.INT2IF=false;
-}
-
-void __ISR(_EXTERNAL_1_VECTOR, IPL4SOFT) INT1_Handler(void){        //current pulse
-    uint32_t thispulse;
-    uint16_t hi = TMR5;   // latches TMR4
-    uint16_t lo = TMR4;
-    thispulse = ((uint32_t)hi << 16) | lo;
-    i_period=lastpulse-thispulse;            //always refernce this to the last voltage pulse that was catched
-     isr_flags |= GOTIPULS;
-    IFS0bits.INT1IF=false;
-}
-void __ISR(_TIMER_2_VECTOR, IPL3SOFT)timer2_handler(void){
+void __ISR(_TIMER_4_VECTOR, IPL3SOFT)timer4_handler(void){
     t_1ms++;
     if(nocan<MAXNOCAN)
         nocan++;
-    IFS0bits.T2IF=false;
+    IFS0bits.T4IF=false;
 }
 
 //spi 3 runs at 3.33MHz, so one round of 3 bytes takes 24/3.33MHz=7.2us
 //after gathering a result the function will call an evaluation function (AC or DC). If that evaluation function determines that all measurement
 //for that buffer is done, successful or not, it will flag the buffer accordingly and switch to the opposite buffer. It will not check whether the
 //buffer was processed by the program loop but rather switch to that buffer. It is the loops task to make sure buffers are processed in due time
-void __ISR(_SPI_3_VECTOR,IPL5SRS)spi3handler(void){
+void __ISR(_SPI_4_VECTOR,IPL5SRS)spi4handler(void){
     uint8_t rdx;
     static uint16_t adres;
-    rdx=SPI3BUF;
-    if(IFS0bits.SPI3EIF){//error; empty buffer and restart with channel 0 if possible
-        LATDSET=0x0010;     //bring CS high
-        SPI3CONbits.ON=false;
+    rdx=SPI4BUF;
+    if(IFS1bits.SPI4EIF){//error; empty buffer and restart with channel 0 if possible
+        LATCSET=0x4000;     //bring CS high
+        SPI4CONbits.ON=false;
     }
     else switch(spistep){
         case SPI_MCP_START: //got junk data, discard
             spistep=SPI_MCP_CMD;
-            SPI3BUF=0x80 |(spichannel <<4); //select channel, keep going
+            SPI4BUF=0x80 |(spichannel <<4); //select channel, keep going
             break;
             
         case SPI_MCP_CMD:
             adres=rdx<<7;
             spistep=SPI_MCP_DUMMY;
-            SPI3BUF=0;              //sent junk data
+            SPI4BUF=0;              //sent junk data
             break;
             
         case SPI_MCP_DUMMY:
             adres|=rdx;
-            LATDSET=0x0010;
+            LATCSET=0x4000;
             if(spichannel<6){
                 if(spichannel & isoptrs)
                     eval_ac(acchptr[0][spichannel],adres);
@@ -105,9 +83,9 @@ void __ISR(_SPI_3_VECTOR,IPL5SRS)spi3handler(void){
             spichannel=(spichannel+1)%8;
 //start over with next channel            
             
-            LATDCLR=0x0010;
+            LATCCLR=0x4000;
             spistep=SPI_MCP_START;
-            SPI3BUF=1;          //start next round
+            SPI4BUF=1;          //start next round
         break;
     }
 }

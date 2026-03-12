@@ -26,6 +26,7 @@
       <itemPath>main.c</itemPath>
       <itemPath>cpusetup.c</itemPath>
       <itemPath>auxfunc.c</itemPath>
+      <itemPath>sysint.c</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>

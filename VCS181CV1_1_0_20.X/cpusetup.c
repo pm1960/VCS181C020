@@ -395,11 +395,12 @@ void initcap(void){
 
 void isrconfig(void){
 //Timer interrupts: Timer 1 and timer 3. Both priority 3, with timer 1 higher secondary priority
-    IFS0bits.T1IF=IFS0bits.T4IF=false;
-    IEC0bits.T1IE=IEC0bits.T4IE=true;
     IPC1bits.T1IP=IPC4bits.T4IP=3;
     IPC1bits.T1IS=3;
     IPC4bits.T4IP=2;
+    IFS0bits.T1IF=IFS0bits.T4IF=false;
+    IEC0bits.T1IE=IEC0bits.T4IE=true;
+
 //SPI2: Priority 2
     IPC7bits.SPI2IP=2;
     IPC7bits.SPI2IS=3;
@@ -546,7 +547,7 @@ void chkfastlog(uint8_t row){
         ok=false;
     if(tx0104[row][10]>5000)      //eng. speed
         ok=false;
-    //skip ctuator checking
+    //skip actuator checking
      if(!ok)
         for(i=0;i!=16;i++)
             tx0104[row][i]=0;
