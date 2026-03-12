@@ -26,7 +26,7 @@
 #define VREF        2500    //same reference for AC and DC
 
 #define TR101LEN    40
-#define TR130LEN    58
+#define TR130LEN    60
 #define MAXRQS      12
 #define MAXLOG      75
 

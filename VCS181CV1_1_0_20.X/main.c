@@ -1,5 +1,5 @@
 #pragma config FCANIO=ON                    //will use default CAN port RF0/RF1
-#pragma config FSRSSEL=PRIORITY_5           //SRS ufsed for priority 4, timer
+#pragma config FSRSSEL=PRIORITY_5           //SRS ufsed for priority 5, SPI4
 //#pragma config FPLLIDIV=DIV_3, FPLLMUL=MUL_20, FPLLODIV=DIV_1, FPBDIV=DIV_2       //for 12MHz quartz
 #pragma config FPLLIDIV=DIV_2, FPLLMUL=MUL_16, FPLLODIV=DIV_1, FPBDIV=DIV_2         //for 10MHz quartz
 #pragma config POSCMOD=HS,IESO=OFF,FNOSC=PRIPLL,OSCIOFNC=OFF,FSOSCEN=OFF

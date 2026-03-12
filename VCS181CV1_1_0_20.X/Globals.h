@@ -10,8 +10,8 @@
 
 extern volatile uint32_t t_1ms,v_period,isr_flags;
 extern volatile uint32_t i_period;
-extern volatile uint16_t nocan,adchan[];
-extern volatile uint8_t adccntr,muxptr;
+extern volatile uint16_t nocan,adchan[14];
+extern volatile uint8_t adccntr;
 
 extern volatile ACCHANNEL u1[2],u2[2],u3[2],i1[2],i2[2],i3[2];
 extern volatile  ACCHANNEL *acchans[12];
@@ -38,7 +38,7 @@ extern uint16_t *idlespeed,*nomspeed,*uoutnom,*treg,*kp,*kd,*ki,*maxint,*uouth_w
 
 
 extern uint8_t *coolin_w,*coolin_o,*altb_w,*altb_o,*exhm_w,*exhm_o,*abs_exhm,*cylh_w,*cylh_o,*abs_cylh,*coil_w,*coil_o,*poil_w,*poil_o,*d_temps,*d_poil,*tk_low,*d_tank,
-                *cooldown_temp,*cooldown_time,*act_crank,*act_idle,*maxoil,*priming,*poles,*compb0,*fan_low,*fan_high,*toil_w,*toil_o,*coolout_w,*coolout_o;;
+                *cooldown_temp,*cooldown_time,*act_crank,*act_idle,*maxoil,*priming,*poles,*compb0,*fan_low,*fan_high,*toil_w,*toil_o,*coolout_w,*coolout_o,*threslow,*cranklow,*idlelow,*d_poillow;
 
 extern uint16_t enrem,rtkmin,rtkmax;
 extern uint16_t alptr,evptr,actmax,actmin;

@@ -5,10 +5,9 @@ volatile uint32_t v_period=0;
 volatile uint32_t i_period=0;
 volatile uint32_t isr_flags=0;
 volatile uint16_t nocan=0;
-volatile uint16_t adchan[8]={0};
+volatile uint16_t adchan[14]={0};
 volatile uint16_t isoresptr=0xFF;
 volatile uint8_t adccntr=0;
-volatile uint8_t muxptr=0;
 volatile uint16_t isoptrs=0;
 
 volatile ACCHANNEL u1[2]={0};
@@ -179,9 +178,9 @@ uint16_t actmin=0;
     uint16_t *uoutnom=&tx0130.trans_w[2];
     uint16_t *treg=&tx0130.trans_w[3];
     uint16_t *kp=&tx0130.trans_w[4];
-    uint16_t *kd=&tx0130.trans_w[5];
-    uint16_t *ki=&tx0130.trans_w[6];
-    uint16_t *maxint=&tx0130.trans_w[7];
+    uint16_t *kpi=&tx0130.trans_w[5];   //use as integral as well
+    uint16_t *kd=&tx0130.trans_w[6];    
+    uint16_t *kdi=&tx0130.trans_w[7];       //use as max. integral as well
     uint16_t *uouth_w=&tx0130.trans_w[8];
     uint16_t *uouth_o=&tx0130.trans_w[9];
     uint16_t *uoutl_w=&tx0130.trans_w[10];
@@ -213,7 +212,6 @@ uint16_t actmin=0;
     uint16_t *sensconfh=&tx0130.trans_w[36];
     uint16_t *progsn_l=&tx0130.trans_w[37];
     uint16_t *progsn_h=&tx0130.trans_w[38];
-    
     uint8_t  *t_idle=&tx0130.trans_b[78];
     uint8_t  *max_crank=&tx0130.trans_b[79];
     uint8_t *coolin_w=&tx0130.trans_b[80];
@@ -248,8 +246,14 @@ uint16_t actmin=0;
     uint8_t *compb0=&tx0130.trans_b[109];
     uint8_t *fan_low=&tx0130.trans_b[110];
     uint8_t *fan_high=&tx0130.trans_b[111];
-    uint16_t *progdate_l=&tx0130.trans_w[56];
-    uint16_t *progdateh=&tx0130.trans_w[57];
+    uint8_t *threshlow=&tx0130.trans_b[112];
+    uint8_t *cranklow=&tx0130.trans_b[113];
+    uint8_t *idlelow=&tx0130.trans_b[114];
+    uint8_t *d_poillow=&tx0130.trans_b[115];
+    uint16_t *progdate_l=&tx0130.trans_w[58];
+    uint16_t *progdateh=&tx0130.trans_w[59];
+
+
     
 static void portsInit(void);
 static void adc_init(void);
@@ -257,12 +261,14 @@ static void tmr_init(void);
 static void spi_init(void);
 static void isrconfig(void);
 static void chkfastlog(uint8_t row);
+static void initcap(void);
     
 void cpu_setup(void){
     DDPCONbits.JTAGEN = false;
     portsInit();
     adc_init();
     tmr_init();
+    initcap();
     spi_init();
     isrconfig();
 }
@@ -293,111 +299,132 @@ void portsInit(void){
 
 
 void adc_init(void){
-    AD1PCFG=0xF0C0;     
-    AD1CON1=0;			//forces normal 16 bit output,
+    //ADC: WIll use all 14 ports, external reference
+    AD1CON1=0;    
     AD1CON1bits.SSRC=0b111;	//set to auto convert
     AD1CON1bits.CLRASAM=1;	//clear sampling automatically
-    AD1CON1bits.ASAM=1;     //prepare for auto-sampling
-    AD1CON1bits.SAMP=1; 
+    AD1CON1bits.ASAM=1;
+    AD1CON1bits.SAMP=1;
 
-    AD1CON2=0;			//Set buffer mode to 16 word buffer, forces usage of always MUX A
+    AD1CON2=0;              //Set buffer mode to 16 word buffer, forces usage of always MUX A
     AD1CON2bits.VCFG=1;		//Reference is AVSS and positive Vref
     AD1CON2bits.CSCNA=1;	//scan inputs;
-    AD1CON2bits.SMPI=7;     //interrupt after 8 samples; During initalization these are all shifted up by 1 bit to catch hardware ID, basically skipping MUX input. The that will be modified after initialization
-    
+    AD1CON2bits.SMPI=0b1101;    //interrupt after 14 samples, programming port will not get sampled
+   
     AD1CON3=0;              //ADC clock derived from peripheral bus
-    AD1CON3bits.SAMC=6;     //Auto Sample timer is set to 6 TAD; with TAD=200ns sampling time will be 1.2 us
-
+    AD1CON3bits.SAMC=0b111;	//Auto Sample timer is set to 7 TAD; with TAD=200ns sampling time will be 1.4 us
     AD1CON3bits.ADCS=3;		//TAD will be 200ns; One conversion=12TAD=2.4us
-    //with a total of 1.2us sampling plus 2.4us conversion time a total of 3.6us is required per channel and 28.8 us for 8 channels. TMR 1 will trigger every 50us. RB11 will be removed from Scan pattern after initialization
+    //with a total of 1.4us sampling plus 2.4us conversion time a total of 3.8us is required per channel and 53.2us for 14 channels
 
-    AD1CHS=0;			//select VR- as negative reference for MUX A; MUX B is not used anyway
-    AD1CSSL=0x0F3C;     //skip MUX for now
-    muxptr=0;
+    AD1CHS=0;               //select VR- as negative reference for MUX A; MUX B is not used anyway
+    AD1CSSL=0xFFFC;        //Do not scan ports 0 and 1 (programming) 
+
+    AD1PCFG=0x03;
 }
 
 void tmr_init(void){    
 //Distribution of timer and PWM  resources:
-//Timer 1 to generate an ADC interrupt every 50us.
-//Timer 2 for general time keeping tasks (runs t_1ms))
-//Timer 3 is the time base for the actuator control (20ms)
-//Timer 4 and 5 are concatenated to form a free-running timer for frequency and phase shift calculation
+//Timer 1 to generate an ADC interrupt every 100us.
+//Timer 2 for actuator PWM
+//Timer 3 time base for capture. No interrupt, free running
+//Timer 4 general timekeeping, increments every 1ms
+    
     T1CON=0;
     TMR1=0;
     T1CONbits.TCKPS=0b01;       //Prescaling factor is 8:1 (200ns out) no gating, peripheral clock source
     PR1=250;                    //will cause interrupt every 50us
     T1CONbits.ON=true;
     
-    T2CON=0;
-    TMR2=0;
-    T2CONbits.TCKPS=3;          //will prescale 1:8, prescaler output is 200ns
-    PR2=5000;                   //will cause 1ms overflow rate
-    T2CONbits.ON=true;
+    T4CON=0;
+    T4CONbits.TCKPS=3;          //will prescale 1:8, prescaler output is 200ns
+    PR4=5000;                   //will cause 1ms overflow rate
+    T4CONbits.ON=1;
     
-    //prepare timer 3 for servo motor. 
-    TMR3=0;
-    T3CON=0;				//see above
-    T3CONbits.TCKPS=0b100;  //prescale 1:16, prescaler output is 400nS
-    PR3=50000;	  			//50000*0.4us=20ms=50Hz.
-    T3CONbits.ON=true;
-
-    TMR4=TMR5=0;
-    T4CON=T5CON=0;
-    T4CONbits.T32=true;
-    T4CONbits.TCKPS=0b010;      //prescale 1:4, 100ns out of the prescaler. 
-    PR4=0xFFFF;
-    PR5=0xFFFF;
-    T4CONbits.ON=true;          //overflow time is 7 minutes and 9.5sec.
+//timer 2 is used for PWM. will not need to interrupt.
+//version 1.1.14 modified to drive stop solenoid as linear actuator. If configured for actuator then that will be fixed after loading conf. settings
+    T2CON=0;			//see above
+    T2CONbits.TCKPS=6;  //prescale 1:64, prescaler output is 1.6us
+    PR2=12500;	  		//12500*1.6us=20ms=50 Hz
+    T2CONbits.ON=1;
     
-//PWM 1 is for actuator control    
-    OC1CON=0;
-    OC1CONbits.OCTSEL=1;        //select timer 3. Timer will be set after loading stop solenoid configuration
-    OC1CONbits.OCM=6;           //regular PWM
+    //timer 3 is used for capture input. Will increment at with 1.6us, overflow time is about 9.5 Hz
+    T3CON=0;			//see above
+    T3CONbits.TCKPS=6;  //prescale 1:64, prescaler output is 1.6us
+    PR3=65535;	  		//continuous overflow is required
+    T3CONbits.ON=1;
+    
+//PWM 5 is for actuator control    
+    OC5CON=0;
+    OC5CONbits.OCTSEL=1;        //select timer 3. Timer will be set after loading stop solenoid configuration
+    OC5CONbits.OCM=6;           //regular PWM
 //Actuator PWM will be enabled while performing calibration
 }
 
 void spi_init(void){
-    //SPI port for Memory will operate @10MHz    
-    SPI4CON=0;                     
-    SPI4CONbits.MSTEN=1;	//master mode for this port. Will switch between 8 and 16 bit mode as required
-    SPI4CONbits.CKE=1;
-    SPI4BRG=1;              
-    SPI4CONbits.ON=1;       //may run continuously
+    //SPI1 for Memory will operate @10MHz    
+    SPI1CON=0;                     
+    SPI1CONbits.MSTEN=1;	//master mode for this port. 
+    SPI1CONbits.CKE=1;
+    SPI1BRG=3;              //run at 5MHz. 
+    SPI1CONbits.ON=1;       //may run continuously
     
-     //SPI1, ADC access. Master mode, 32 bits
-    SPI3CON=0;                  //will default to transmit interrupting when TSR is empty,
-    SPI3CONbits.MSTEN=true;    
-    SPI3BRG=5;                 //select 3.333MHz communication speed and 8bit mode. Will use 3 bytes per each transfer
-    SPI3CONbits.CKE=true;
+     //SPI4, external ADC access. Master mode
+    SPI4CON=0;                  //will default to transmit interrupting when TSR is empty,
+    SPI4CONbits.MSTEN=true;    
+    SPI4BRG=5;                 //select 3.333MHz communication speed and 8bit mode. Will use 3 bytes per each transfer
+    SPI4CONbits.CKE=true;
+    
+    //SPI2 for VCS temperature and oil temperature, slow running
+    SPI2CON=0;
+    SPI4CONbits.MSTEN=true;
+    SPI2CONbits.CKE=true;
+    SPI2BRG=39;                 //run at 500kHz
+}
+
+void initcap(void){
+    while((!PORTDbits.RD8)&&(!PORTDbits.RD9));
+    //Capture on pins IC1 and IC2 (RD8 and RD9)
+    IC1CON=0;               //default status, use timer 3 (16bit) interrupt on every event
+    IC1CONbits.ICM=3;       //capture every rising edge, every event creates an interrupt
+    IC1CONbits.ON=true;
+    
+    IC2CON=0;               //default status, use timer 3 (16bit) interrupt on every event
+    IC2CONbits.ICM=3;       //capture every rising edge, every event creates an interrupt
+    IC2CONbits.ON=true;
 }
 
 void isrconfig(void){
+//Timer interrupts: Timer 1 and timer 3. Both priority 3, with timer 1 higher secondary priority
+    IFS0bits.T1IF=IFS0bits.T4IF=false;
+    IEC0bits.T1IE=IEC0bits.T4IE=true;
+    IPC1bits.T1IP=IPC4bits.T4IP=3;
+    IPC1bits.T1IS=3;
+    IPC4bits.T4IP=2;
+//SPI2: Priority 2
+    IPC7bits.SPI2IP=2;
+    IPC7bits.SPI2IS=3;
+    IEC1bits.SPI2RXIE=IEC1bits.SPI2EIE=true;
+    IFS1bits.SPI2RXIF=IFS1bits.SPI2EIF=false;
     
-//external interrupts, group 4    
-    INTCONbits.INT1EP=INTCONbits.INT2EP=true;       //trigger on rising edge for both, current and voltage
-    IFS0bits.INT1IF=IFS0bits.INT2IF=false;
-    IEC0bits.INT1IE=IEC0bits.INT2IE=true;
-    IPC1bits.INT1IP=IPC2bits.INT2IP=4;              
-    IPC1bits.IC1IS=2;
-    IPC2bits.INT2IS=3;       //voltage first if coincidental
+//SPI4: Priority 5
+    IPC8bits.SPI4IP=5;  //will use shadow register
+    IPC8bits.SPI4IS=3;
+    IEC1bits.SPI4RXIE=IEC1bits.SPI4EIE=true;
+    IFS1bits.SPI4RXIF=IFS1bits.SPI4EIF=false;
     
-//SPI3 ADC, group 5
-    //SPI 4, ADC communication, will use SRS
-    IPC6bits.SPI3IP=5;  
-    IPC6bits.SPI3IS=3;  //one below timer within class
-    //interrupts will be enabled when initializing the external ADC
+//Input captures: Priority 7
+    IPC1bits.IC1IP=IPC2bits.IC2IP=7;
+    IPC1bits.IC1IS=3;
+    IPC2bits.IC2IS=2;
+    IEC0bits.IC1IE=true;
+    IEC0bits.IC2IE=true;
+    IFS0bits.IC1IF=IFS0bits.IC2IF=false;
     
 //CAN, group 6
     IPC11bits.CAN1IP=6;     //CAN port
     IPC11bits.CAN1IS=3;	
     //will be enabled after fully initializing the CAN port
-    
-//timer 1 and 2, group 3
-    IFS0bits.T1IF=IFS0bits.T2IF=false;
-    IEC0bits.T1IE=IEC0bits.T2IE=true;
-    IPC1bits.T1IP=IPC2bits.T2IP=3;
-    IPC1bits.T1IS=3;
-    IPC2bits.T2IP=2;
+
     INTCONbits.MVEC=true;
     __builtin_enable_interrupts();
 }
