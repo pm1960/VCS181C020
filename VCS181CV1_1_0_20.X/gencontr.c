@@ -686,7 +686,7 @@ void GENCONTR_Tasks (void){
 void readintad(bool initrq){
     uint8_t i;
     int16_t coiltemp[3];
-    static uint16_t sumbuf[14],lastfrq;
+    static uint16_t lastfrq;
     static uint16_t slowcntr;
     static bool nextf;
     uint16_t rx,alfa,adc[14];
@@ -698,29 +698,13 @@ void readintad(bool initrq){
         isrcom.Bits.gotpf=false;
     }
     else{ 
-        if(AD1CON1bits.DONE){
-            sumbuf[0]+=ADC1BUF0;
-            sumbuf[1]+=ADC1BUF1;
-            sumbuf[2]+=ADC1BUF2;
-            sumbuf[3]+=ADC1BUF3;
-            sumbuf[4]+=ADC1BUF4;
-            sumbuf[5]+=ADC1BUF5;
-            sumbuf[6]+=ADC1BUF6;
-            sumbuf[7]+=ADC1BUF7;        
-            sumbuf[8]+=ADC1BUF8;
-            sumbuf[9]+=ADC1BUF9;
-            sumbuf[10]+=ADC1BUFA;
-            sumbuf[11]+=ADC1BUFB;
-            sumbuf[12]+=ADC1BUFC;
-            sumbuf[13]+=ADC1BUFD;            
-            
-            if(++slowcntr>63){
-                slowcntr=0;
-                for(i=0;i!=14;i++){
-                    adc[i]=sumbuf[i]>>6;
-                    sumbuf[i]=0;
-                }
-            }     
+        if(adccntr==64){
+            for(i=0;i!=14;i++){
+                adc[i]=adres[i]>>6;
+                adc[i]=0;
+            }
+            adccntr=0;        
+                
             if(TESTBIT(tx0130.val.sensconfig_l,0))
                 tx0101.val.tcoolin=gettemp(adc[9],tch_e);  
             else tx0101.val.tcoolin=255;

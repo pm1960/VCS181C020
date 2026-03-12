@@ -1,37 +1,31 @@
-#pragma config FVBUSONIO=OFF, FUSBIDIO=ON, UPLLEN=OFF, UPLLIDIV=DIV_1
-#pragma config FCANIO=ON
-#pragma config FSRSSEL=PRIORITY_4
-#pragma config FPLLIDIV=DIV_2, FPLLMUL=MUL_16, FPLLODIV=DIV_1, FPBDIV=DIV_2     //Will set frequency to 80MHz and peripheral clock to 40 MHz.
-#pragma config POSCMOD=HS,IESO=OFF,FNOSC=PRIPLL,OSCIOFNC=OFF,FSOSCEN=OFF         //turn off secondary OSC
-#pragma config FWDTEN=OFF, WDTPS=PS4096
-#pragma config FCKSM=CSECMD//enable clock switching. Required for low power mode
-#pragma config CP=OFF, BWP=OFF, PWP=OFF
-#pragma config ICESEL=ICS_PGx1
+#pragma config FCANIO=ON                    //will use default CAN port RF0/RF1
+#pragma config FSRSSEL=PRIORITY_5           //SRS ufsed for priority 4, timer
+//#pragma config FPLLIDIV=DIV_3, FPLLMUL=MUL_20, FPLLODIV=DIV_1, FPBDIV=DIV_2       //for 12MHz quartz
+#pragma config FPLLIDIV=DIV_2, FPLLMUL=MUL_16, FPLLODIV=DIV_1, FPBDIV=DIV_2         //for 10MHz quartz
+#pragma config POSCMOD=HS,IESO=OFF,FNOSC=PRIPLL,OSCIOFNC=OFF,FSOSCEN=OFF
+#pragma config FWDTEN=OFF,WDTPS=PS4096      //used for low power mode during cranking
+#pragma config FCKSM=CSECMD                 //clock switch enabled (required during low power
+#pragma config CP=OFF, BWP=OFF, PWP=OFF     //code protect and block protect
+#pragma config ICESEL=ICS_PGx1              //program interface on port 2
+
+#include <xc.h>
 
 #include "Defines.h"
-#include <xc.h>
-#include <plib.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include "Globals.h"
 #include "cpusetup.h"
-#include "usbcom.h"
-#include "auxfunc.h"
-
 
 void main(void){
-    cpusetup();
-    checkpwrup();
-    RCONbits.BOR=RCONbits.POR=RCONbits.EXTR=false;
-    usbstat=USBCOM_STATE_INIT;
-    gencontrstate=GENCONTR_STATE_INIT;
-    cancomstate=CAN_STATE_INIT;
-    tbusfail=t_1ms;
-    calok=false;
-    while(true){
-        usbcont();
-        GENCONTR_Tasks();
-        CANCOM_Tasks();
-        SYS_Tasks();
+    static uint32_t tmrx;
+    cpu_setup();
+    tmrx=t_1ms;
+    if(cpu_init())
+        inlowpwr();
+//    else while(((t_1ms-tmrx)>PWRUPTIME) && stat_bits.onpending)
+//        CANCOM_Tasks();
+//    if(stat_bits.onpending)
+        inlowpwr();
+//    else while(true){
+//        CANCOM_Tasks();
+//        SysTasks();
     }
-}
+//}

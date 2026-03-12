@@ -9,10 +9,6 @@
       <itemPath>StateDefinitions.h</itemPath>
       <itemPath>cpusetup.h</itemPath>
       <itemPath>auxfunc.h</itemPath>
-      <itemPath>CanCom.h</itemPath>
-      <itemPath>usbcom.h</itemPath>
-      <itemPath>SYSTasks.h</itemPath>
-      <itemPath>gencontr.h</itemPath>
       <itemPath>LookupTable.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
@@ -29,12 +25,7 @@
                    projectFiles="true">
       <itemPath>main.c</itemPath>
       <itemPath>cpusetup.c</itemPath>
-      <itemPath>sysint.c</itemPath>
       <itemPath>auxfunc.c</itemPath>
-      <itemPath>CanCom.c</itemPath>
-      <itemPath>usbcom.c</itemPath>
-      <itemPath>SYSTasks.c</itemPath>
-      <itemPath>gencontr.c</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>

@@ -1,31 +1,22 @@
-/* 
- * File:   cpusetup.h
- * Author: paulmuell
- *
- * Created on September 1, 2015, 9:46 AM
- */
 
-#ifndef CPUSETUP_H
-#define	CPUSETUP_H
+#ifndef _CPUSETUP_H    /* Guard against multiple inclusion */
+#define _CPUSETUP_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
-#include "Defines.h"
-#include <stdint.h>
-#include <stdbool.h>
 #include <xc.h>
-#include <plib.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include "Defines.h"
 #include "Globals.h"
+#include "Structures.h"
+#include "auxfunc.h"
+//#include "BitsManager.h"
 
-void cpusetup(void);
-void initcap(void);
-bool cpuinit(void);
+void cpu_setup(void);
+bool cpu_init(void);
 
-#ifdef	__cplusplus
-}
-#endif
 
-#endif	/* CPUSETUP_H */
+#endif /* _CPUSETUP_H */
 
+/* *****************************************************************************
+ End of File
+ */
