@@ -447,7 +447,7 @@ bool cpu_init(void){
     AD1CON1bits.ADON=true;
     LATACLR=0x0040;     //act. on
     while(!retval || ((t_1ms-tmrx)>500)){
-        while(adccntr<64);
+        while(adccntr<65);
         adchan[1]>>=6;
         adchan[5]>>=6;
         *ubatt=(uint32_t)adchan[1]*VREF*17/10;             //divider ratio is 17, factor1/10 for unit

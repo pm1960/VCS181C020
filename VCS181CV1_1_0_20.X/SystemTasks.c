@@ -1,8 +1,11 @@
 #include "SystemTasks.h"
 
+static uint16_t wleakin;
+
 static void checkextio(bool init);
 static bool switchon(uint32_t *tmr, uint8_t *stats,uint8_t channel,bool commandon);
 static bool switchoff(uint32_t *tmr, uint8_t *stats,uint8_t channel,bool commandon);
+static void readintad(void);
 
 void SysTasks(void){
     static uint32_t tmrx;
@@ -12,6 +15,7 @@ void SysTasks(void){
             tmrx=t_1ms;
             sysstat=SYS_CONNECT;
             checkextio(true);
+            readintad();
             initcomp();
             compcalc(true);
             checkextad_ac(true);
@@ -39,32 +43,53 @@ void checkextio(bool init){
         digstats=0xF0;      //inidicates that all signals are off
     
     else{
-        if(!TESTBIT(*stwordhigh,FANTEMPSWITCH)){    //switch is inactive
-            if(switchon(&tmrins[FANSW],&digstats,FANSW,!PORTBbits.RB12))
-                SETBIT(*stwordhigh,FANTEMPSWITCH);
+        if(TESTBIT(*genconfh,5)){
+            if(!TESTBIT(*stwordhigh,11)){    //switch is inactive
+                if(switchon(&tmrins[FANSW],&digstats,FANSW,!PORTAbits.RA7))
+                    SETBIT(*stwordhigh,11);
+            }
+            else if(switchoff(&tmrins[FANSW],&digstats,FANSW,PORTAbits.RA7))
+                CLEARBIT(*stwordhigh,11);
         }
-        else if(switchoff(&tmrins[FANSW],&digstats,FANSW,PORTBbits.RB12))
-            CLEARBIT(*stwordhigh,FANTEMPSWITCH);
-        if(!TESTBIT(*miscwordlow,AIRINTAKE)){
-            if(switchon(&tmrins[AIRINSW],&digstats,AIRINSW,!PORTBbits.RB13))
-                SETBIT(*miscwordlow,AIRINTAKE);
-        }
-        else if(switchoff(&tmrins[AIRINSW],&digstats,AIRINSW,PORTBbits.RB13))
-            CLEARBIT(*miscwordlow,AIRINTAKE);
+        else 
+            CLEARBIT(*stwordhigh,11);
+        
+        if(TESTBIT(*genconfh,2)){
+            if(!TESTBIT(*miscwordlow,9)){
+                if(switchon(&tmrins[AIRINSW],&digstats,AIRINSW,!PORTAbits.RA9))
+                    SETBIT(*miscwordlow,9);
+            }
+            else if(switchoff(&tmrins[AIRINSW],&digstats,AIRINSW,PORTAbits.RA9))
+                CLEARBIT(*miscwordlow,9);
+            }
+        else
+            CLEARBIT(*miscwordlow,9);
+        
         if(!stat_bits.battles){
-            if(switchon(&tmrins[LOCALBS],&digstats,LOCALBS,PORTDbits.RD6))      //battle short triggers on closing contact
+            if(switchon(&tmrins[LOCALBS],&digstats,LOCALBS,PORTEbits.RE9))      //battle short triggers on closing contact
                 stat_bits.battles=true;
         }
-        else if(switchoff(&tmrins[LOCALBS],&digstats,LOCALBS,!PORTDbits.RD6))      //battle short triggers on closing contact
+        else if(switchoff(&tmrins[LOCALBS],&digstats,LOCALBS,!PORTEbits.RE9))      //battle short triggers on closing contact
             stat_bits.battles=false;
+        
         if(gcontstat>GENCONTR_STATE_CRANKING){                                      //will not trigger oil pressure switch if generator is not running
-            if(!TESTBIT(*stwordlow,POILSWITCH)){
-                if(switchon(&tmrins[OILPRSW],&digstats,OILPRSW,!PORTDbits.RD7))
-                    SETBIT(*stwordlow,POILSWITCH);
+            if(!TESTBIT(*stwordhigh,9)){
+                if(switchon(&tmrins[OILPRSW],&digstats,OILPRSW,!PORTGbits.RG0))
+                    SETBIT(*stwordhigh,9);
             }
-            else if(switchoff(&tmrins[OILPRSW],&digstats,OILPRSW,PORTDbits.RD7))
-                CLEARBIT(*stwordlow,POILSWITCH);
+            else if(switchoff(&tmrins[OILPRSW],&digstats,OILPRSW,PORTGbits.RG0))
+                CLEARBIT(*stwordhigh,9);
         }
+        
+        if(TESTBIT(*genconfh,3)){    //Fan breaker is monitored on analog input, will compare to fix thresholds 
+            if(wleakin>((VREF-(VREF>>2))))
+                SETBIT(*stwordhigh,10);
+            else if(wleakin<(VREF>>2))
+                CLEARBIT(*stwordhigh,10);
+        }
+        else
+            CLEARBIT(*stwordhigh,10);
+            
     }
 }
 
@@ -110,4 +135,15 @@ bool switchoff(uint32_t *tmr, uint8_t *stats,uint8_t channel,bool commandon){
         CLEARBIT(*stats,channel+4);
     }
     return(retval);
+}
+
+void readintad(void){
+    uint16_t adin[14];
+    uint8_t i;
+    if(adccntr>64){
+        for(i=0;i!=16;i++)
+            adin[i]=adchan[i]>>6;
+        restart_adc();
+        wleakin=adin[3];        //will be processed along with digital inputs
+    }
 }
