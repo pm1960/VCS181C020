@@ -7,7 +7,10 @@ volatile uint32_t isr_flags=0;
 volatile uint16_t nocan=0;
 volatile uint16_t adchan[14]={0};
 volatile uint16_t isoresptr=0xFF;
+volatile uint16_t tvcstemp=0;
+volatile uint16_t oiltemp=0; 
 volatile uint8_t adccntr=0;
+volatile uint8_t u17cntr=0;
 volatile uint16_t isoptrs=0;
 
 volatile ACCHANNEL u1[2]={0};
@@ -278,9 +281,10 @@ void cpu_setup(void){
 void portsInit(void){
     TRISA = 0xC681;
     ODCAbits.ODCA6=true;
-    TRISA = 0x0040; //turn on actuator 
+    LATA = 0x0040; // actuator off
 
     TRISB = 0xFFFF;
+    
     TRISC = 0x901E;
     LATC = 0x6000;      //de-assert CS, DC DC converter on
     
@@ -303,8 +307,8 @@ void adc_init(void){
     AD1CON1=0;    
     AD1CON1bits.SSRC=0b111;	//set to auto convert
     AD1CON1bits.CLRASAM=1;	//clear sampling automatically
-    AD1CON1bits.ASAM=1;
-    AD1CON1bits.SAMP=1;
+    AD1CON1bits.ASAM=true;
+    AD1CON1bits.SAMP=true;
 
     AD1CON2=0;              //Set buffer mode to 16 word buffer, forces usage of always MUX A
     AD1CON2bits.VCFG=1;		//Reference is AVSS and positive Vref
@@ -324,7 +328,6 @@ void adc_init(void){
 
 void tmr_init(void){    
 //Distribution of timer and PWM  resources:
-//Timer 1 to generate an ADC interrupt every 100us.
 //Timer 2 for actuator PWM
 //Timer 3 time base for capture. No interrupt, free running
 //Timer 4 general timekeeping, increments every 1ms
@@ -376,9 +379,9 @@ void spi_init(void){
     
     //SPI2 for VCS temperature and oil temperature, slow running
     SPI2CON=0;
-    SPI4CONbits.MSTEN=true;
+    SPI2CONbits.MODE16=true;   //run in 16 bit mode, one transaction per reading
     SPI2CONbits.CKE=true;
-    SPI2BRG=39;                 //run at 500kHz
+    SPI2BRG=99;            //run with 200kHz
 }
 
 void initcap(void){
@@ -395,12 +398,17 @@ void initcap(void){
 
 void isrconfig(void){
 //Timer interrupts: Timer 1 and timer 3. Both priority 3, with timer 1 higher secondary priority
-    IPC1bits.T1IP=IPC4bits.T4IP=3;
-    IPC1bits.T1IS=3;
-    IPC4bits.T4IP=2;
-    IFS0bits.T1IF=IFS0bits.T4IF=false;
-    IEC0bits.T1IE=IEC0bits.T4IE=true;
-
+    IPC4bits.T4IP=4;
+    IPC4bits.T4IS=3;
+    IFS0bits.T4IF=false;
+    IEC0bits.T4IE=true;
+    
+//ADC, priority 3
+    IPC6bits.AD1IP=3;
+    IPC6bits.AD1IS=3;
+    IEC1bits.AD1IE=true;
+    IFS1bits.AD1IF=false;
+    
 //SPI2: Priority 2
     IPC7bits.SPI2IP=2;
     IPC7bits.SPI2IS=3;
@@ -436,32 +444,27 @@ bool cpu_init(void){
     uint16_t rdbf[2];
     uint8_t i;
     bool retval=false;
-    LATGCLR=0x0200;     //this will turn on the DC DC converter as well
     AD1CON1bits.ADON=true;
- 
-    //turn on the actuator and check feedback. 
+    LATACLR=0x0040;     //act. on
     while(!retval || ((t_1ms-tmrx)>500)){
         while(adccntr<64);
-        *ubatt=((uint32_t)adchan[3]*VREF*17/10)>>16;             //divider ratio is 17, factor1/10 for unit
-        *actu=((uint32_t)adchan[3]*VREF*27/(270+470))>>16;       // Actuator voltage; include resistive divider and factor 1/10 because unit is 10mV
-        adchan[7]=((uint32_t)adchan[7]*VREF)>>16;
-        if(adchan[7]<15)
-            hwtype=ISC006;
+        adchan[1]>>=6;
+        adchan[5]>>=6;
+        *ubatt=(uint32_t)adchan[1]*VREF*17/10;             //divider ratio is 17, factor1/10 for unit
+        *actu=(uint32_t)adchan[5]*VREF*249/(2490+6040);       // Actuator voltage; include resistive divider and factor 1/10 because unit is 10mV
+        restart_adc();
+        if(PORTEbits.RE0)
+            hwtype=ISC005;
+        else
+            hwtype=ISC004;
         retval=(*actu<700) && (*actu>5500) && (*ubatt>VBATTMIN) && (*ubatt<VBATTMAX);
         for(i=0;i!=8;i++)
             adchan[i]=0;
         if(!retval)
             adccntr=0;  //start another round
     }
-    LATGSET=0x0200;     //turn the actuator off again. Will only require it when running the generator
+    LATASET=0x0040;     //turn the actuator off again. Will only require it when running the generator
     if(retval){
-        AD1CON1bits.ADON=false;     //switch back to 
-        AD1CSSL=0x073E;
-        AD1CON1bits.ADON=true;
-        readeeprom(0,tx0130.trans_w,TR130LEN-2);
-        if(!checkmirr(tx0130.trans_w)){
-            SETBIT(*stwordlow,2);
-        }
         readeeprom(0x01A0,progdate_l,2);
         readeeprom(0x01E8,tx013A.trans,6);
         if(tx013A.v32.optime>9999998)
@@ -493,7 +496,11 @@ bool cpu_init(void){
         readeeprom(0x01F4,&enrem,1);
         if(enrem>10000)
             enrem=0;
-        
+        readeeprom(0,tx0130.trans_w,TR130LEN);
+
+        if(!checkmirr(tx0130.trans_w))   
+            SETBIT(*stwordlow,2);
+
         readeeprom(0x0200,rdbf,2);
         alptr=rdbf[0];
         evptr=rdbf[1];

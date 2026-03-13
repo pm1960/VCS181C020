@@ -13,6 +13,9 @@
 #include "Globals.h" 
 //#include "BitsManager.h"
 
+void restart_adc(void);
+
+
 void initextadc(void);
 bool readeeprom(uint16_t adr,uint16_t *buf,uint16_t len);
 bool writeeeprom(uint16_t adr, uint16_t *buf, uint16_t len);

@@ -10,8 +10,8 @@
 
 extern volatile uint32_t t_1ms,v_period,isr_flags;
 extern volatile uint32_t i_period;
-extern volatile uint16_t nocan,adchan[14];
-extern volatile uint8_t adccntr;
+extern volatile uint16_t nocan,adchan[14],vcstemp,oiltemp;
+extern volatile uint8_t adccntr,u17cntr;
 
 extern volatile ACCHANNEL u1[2],u2[2],u3[2],i1[2],i2[2],i3[2];
 extern volatile  ACCHANNEL *acchans[12];

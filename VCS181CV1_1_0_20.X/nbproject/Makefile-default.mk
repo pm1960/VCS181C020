@@ -51,17 +51,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=main.c cpusetup.c auxfunc.c sysint.c
+SOURCEFILES_QUOTED_IF_SPACED=main.c cpusetup.c auxfunc.c sysint.c SystemTasks.c CanCom.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o ${OBJECTDIR}/cpusetup.o ${OBJECTDIR}/auxfunc.o ${OBJECTDIR}/sysint.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d ${OBJECTDIR}/cpusetup.o.d ${OBJECTDIR}/auxfunc.o.d ${OBJECTDIR}/sysint.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o ${OBJECTDIR}/cpusetup.o ${OBJECTDIR}/auxfunc.o ${OBJECTDIR}/sysint.o ${OBJECTDIR}/SystemTasks.o ${OBJECTDIR}/CanCom.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d ${OBJECTDIR}/cpusetup.o.d ${OBJECTDIR}/auxfunc.o.d ${OBJECTDIR}/sysint.o.d ${OBJECTDIR}/SystemTasks.o.d ${OBJECTDIR}/CanCom.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/main.o ${OBJECTDIR}/cpusetup.o ${OBJECTDIR}/auxfunc.o ${OBJECTDIR}/sysint.o
+OBJECTFILES=${OBJECTDIR}/main.o ${OBJECTDIR}/cpusetup.o ${OBJECTDIR}/auxfunc.o ${OBJECTDIR}/sysint.o ${OBJECTDIR}/SystemTasks.o ${OBJECTDIR}/CanCom.o
 
 # Source Files
-SOURCEFILES=main.c cpusetup.c auxfunc.c sysint.c
+SOURCEFILES=main.c cpusetup.c auxfunc.c sysint.c SystemTasks.c CanCom.c
 
 
 
@@ -125,6 +125,18 @@ ${OBJECTDIR}/sysint.o: sysint.c  .generated_files/flags/default/465bba0b37ceeb53
 	@${RM} ${OBJECTDIR}/sysint.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/sysint.o.d" -o ${OBJECTDIR}/sysint.o sysint.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
+${OBJECTDIR}/SystemTasks.o: SystemTasks.c  .generated_files/flags/default/4da63b2204df5865645793827059a5b966dc4143 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/SystemTasks.o.d 
+	@${RM} ${OBJECTDIR}/SystemTasks.o 
+	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/SystemTasks.o.d" -o ${OBJECTDIR}/SystemTasks.o SystemTasks.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
+	
+${OBJECTDIR}/CanCom.o: CanCom.c  .generated_files/flags/default/6a4172bb98ff9cdc49f2d06dcd6eeaa7c5750dcb .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/CanCom.o.d 
+	@${RM} ${OBJECTDIR}/CanCom.o 
+	${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CanCom.o.d" -o ${OBJECTDIR}/CanCom.o CanCom.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
+	
 else
 ${OBJECTDIR}/main.o: main.c  .generated_files/flags/default/b4d1831d788578c8346cba777fba7b77d51b397c .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}" 
@@ -149,6 +161,18 @@ ${OBJECTDIR}/sysint.o: sysint.c  .generated_files/flags/default/7e76babd2b627b09
 	@${RM} ${OBJECTDIR}/sysint.o.d 
 	@${RM} ${OBJECTDIR}/sysint.o 
 	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/sysint.o.d" -o ${OBJECTDIR}/sysint.o sysint.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
+	
+${OBJECTDIR}/SystemTasks.o: SystemTasks.c  .generated_files/flags/default/767edc56031cb79a7aad1e78a7c4c8030a189f3b .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/SystemTasks.o.d 
+	@${RM} ${OBJECTDIR}/SystemTasks.o 
+	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/SystemTasks.o.d" -o ${OBJECTDIR}/SystemTasks.o SystemTasks.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
+	
+${OBJECTDIR}/CanCom.o: CanCom.c  .generated_files/flags/default/e6e6406d7947b2cdaa72d9521633941f7149cf09 .generated_files/flags/default/da39a3ee5e6b4b0d3255bfef95601890afd80709
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/CanCom.o.d 
+	@${RM} ${OBJECTDIR}/CanCom.o 
+	${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/CanCom.o.d" -o ${OBJECTDIR}/CanCom.o CanCom.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)    
 	
 endif
 

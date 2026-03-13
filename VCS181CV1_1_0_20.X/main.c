@@ -18,14 +18,14 @@ void main(void){
     static uint32_t tmrx;
     cpu_setup();
     tmrx=t_1ms;
-    if(cpu_init())
+    if(!cpu_init())
         inlowpwr();
-//    else while(((t_1ms-tmrx)>PWRUPTIME) && stat_bits.onpending)
-//        CANCOM_Tasks();
-//    if(stat_bits.onpending)
+    else while(((t_1ms-tmrx)>PWRUPTIME) && stat_bits.onpending)
+        CANCOM_Tasks();
+    if(stat_bits.onpending)
         inlowpwr();
-//    else while(true){
-//        CANCOM_Tasks();
-//        SysTasks();
+    else while(true){
+        CANCOM_Tasks();
+        SysTasks();
     }
-//}
+}

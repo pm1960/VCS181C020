@@ -213,7 +213,7 @@ bool checkmirr(uint16_t *bf){
         rtkmax=gfl+gfl>>2;
     }
     gfl=*bf++;   //genconfl
-    if(TESTBIT(gfl,15) && ((gfl&3)!=2))
+    if((TESTBIT(gfl,15) && ((gfl&3)!=2)) || (!TESTBIT(gfl,15) &&(gfl & 3)!=0))
         retval=false;
     bf+=5;      //skip genconfh, sensor config and SN
 
@@ -712,4 +712,12 @@ bool actfailoff(uint8_t *calst){
     SETBIT(*mwordlow,12);                 //and mark actuator as not calibrated
     *calst=0;           
     return(true);
+}
+
+void restart_adc(void){
+    uint8_t i;
+    for(i=0;i!=14;i++)
+        adchan[i]=0;
+    adccntr=0;
+    AD1CON1bits.SAMP=1;
 }

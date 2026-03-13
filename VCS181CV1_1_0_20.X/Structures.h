@@ -41,9 +41,8 @@ typedef enum {
 
 typedef enum{
     UNKNOWN=0,
-    ISC006,
-    ISC007,
-    ISC008,
+    ISC004,
+    ISC005,
 }HWTYPE;
 
 typedef struct{

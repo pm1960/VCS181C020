@@ -13,7 +13,8 @@
 
 
 const uint8_t unknown[]="unknown";
-const uint8_t verc06[]="VCS181C006";
+const uint8_t verc04[]="VCS181C004";
+const uint8_t verc05[]="VCS181C006";
 const uint8_t verc07[]="VCS181C007";
 
 //maximum time assigned for a multi-frame transfer. Any transfer taking longer will be cancelled

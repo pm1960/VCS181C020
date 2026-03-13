@@ -1,6 +1,5 @@
 #include "CanCom.h"
 #include "CanFunctions.h"
-#include "BitsManager.h"
 static uint16_t infilter[]={0x0001,0x0002,0x0003,0x0005,0x0007,0x0009,0x000A,0x000B,0x0010,0x0100,0x0130,0x0138,0x013A,0x01B0,0x01B1,0x01B2,0x01B3,0x01B4,0x01B5,0x01B6,0};
 
 static bool canoffon(void);
@@ -130,7 +129,7 @@ bool initcan(void){
     C1CFGbits.SEG1PH=2;		//same as phase segment 1
     C1CFGbits.PRSEG=2;		//propagation delay ist 3 TQ
     C1CFGbits.SJW=1;		//SJW=2 TQ
-    C1CFGbits.BRP=7;		//Prescale FSYS by 10, with an additional prescaler of 2 this results in 400ns per TQ
+    C1CFGbits.BRP=15;		//Prescale FSYS by 16, with an additional prescaler of 2 this results in 400ns per TQ
     C1FIFOBA=KVA_TO_PA(C1FiFoBuff);         //assign physical address to buffer base address
 
     //now initialize all buffers
@@ -215,6 +214,7 @@ void readeidbuf(void){
     while(canprocptr!=canrxptr){  //will stop processing if some data becomes available. In that case, that data needs to be processed first
         src=canrxbuf[canprocptr].msgEID.EID&0xFF;   //source of this frame
         transferid=((canrxbuf[canprocptr].msgEID.EID>>8)&0x03FF)|((canrxbuf[canprocptr].msgSID.SID&0x3F)<<10);
+        transferid;
         if(valtrans(transferid)){ 
             if(transferid<0x0100)
                 proctrans(transferid,src,(uint8_t*)&canrxbuf[canprocptr].data[0]);    
@@ -546,7 +546,7 @@ bool txtrans(uint16_t rqtrans,uint8_t *bf){
             case 0x01B4:    //last reset op time / date for bits 0..15
             case 0x01B5:    //last reset op time / date for bits 16..31
                 if(getemptymf(&k))
-                    if(!TESTBIT(*miscwordlow,SOURCECMDATA) || (panelx20.nodesw == 0xFFFFFFFF)){
+                    if(!TESTBIT(*miscwordlow,4) || (panelx20.nodesw == 0xFFFFFFFF)){
                         retval=true;
                         mfrx[k]->status=TX_REQ;              
                         mfrx[k]->idword=rqtrans;
@@ -588,7 +588,7 @@ bool txtrans(uint16_t rqtrans,uint8_t *bf){
                     
             case 0x01B6:    
                 if(getemptymf(&k))
-                    if(!TESTBIT(*miscwordlow,SOURCECMDATA) || (panelx20.nodesw == 0xFFFFFFFF)){
+                    if(!TESTBIT(*miscwordlow,4) || (panelx20.nodesw == 0xFFFFFFFF)){
                         retval=true;
                         mfrx[k]->dset=seq01b6=(seq01b6+0x20)&0xE0;
                         mfrx[k]->status=TX_REQ;              
@@ -629,10 +629,10 @@ uint8_t ldid(uint8_t *dta){
     i=12;
     if(hwtype==UNKNOWN)
         src=(uint8_t *)unknown;
-    else if(hwtype==ISC006)
-        src=(uint8_t *)verc06;
-    else if(hwtype==ISC007)
-        src=(uint8_t *)verc07;
+    else if(hwtype==ISC004)
+        src=(uint8_t *)verc04;
+    else if(hwtype==ISC005)
+        src=(uint8_t *)verc05;
     while(*dta++=*src++)
         i++;
     *dta=0;     //string needs to be zero terminated
@@ -690,15 +690,15 @@ void  proctrans(uint16_t transferid,uint8_t src, uint8_t *msg){
 
                 if(TESTBIT(*genconfl,8)){      //if rem. start on panel is static      
                     if(!tx0003.val.staticstat){
-                        CLEARBIT(*stwordhigh,DENIEDSTART);
-                        CLEARBIT(*stwordhigh,STSTOP_CONF);
+                        CLEARBIT(*stwordhigh,6);
+                        CLEARBIT(*stwordhigh,5);
                         if(st_feedb.val.actstat || (gcontstat==GENCONTR_STATE_UNACKAL) || st_feedb.val.alpending)
                             remcommand=tx0003.val.startstop=true;  //requested a stop condition
                     }
                     else if(!st_feedb.val.actstat){
                         if(st_feedb.val.startinhib || (gcontstat==GENCONTR_STATE_UNACKAL) || TESTBIT(*miscwordlow,0))
-                            SETBIT(*stwordhigh,DENIEDSTART);
-                        else if(!TESTBIT(*stwordhigh,DENIEDSTART))
+                            SETBIT(*stwordhigh,6);
+                        else if(!TESTBIT(*stwordhigh,6))
                             remcommand=tx0003.val.startstop=true;  //requested a start
                     }
                 }
@@ -738,7 +738,7 @@ void  proctrans(uint16_t transferid,uint8_t src, uint8_t *msg){
                             st_feedb.val.newin=true;
                         }  
                         if(tx0003.val.staticstat)
-                            SETBIT(*stwordhigh,STSTOP_CONF);  //command was issued manually, signal start/stop conflict
+                            SETBIT(*stwordhigh,5);  //command was issued manually, signal start/stop conflict
                     }
                     else if(st_feedb.val.alpending){
                         st_feedb.val.newin=true;        
@@ -891,7 +891,7 @@ void  proctrans(uint16_t transferid,uint8_t src, uint8_t *msg){
                 bfin[i]|=*msg++ <<8;
             }
             if(checkmirr(bfin)){     //will have to save data, to default or regular, just as was requested with previous transfer 0x0003
-                CLEARBIT(*stwordlow,PROG_INVAL);
+                CLEARBIT(*stwordlow,2);
                 writeeeprom(0x1A0,&bfin[TR130LEN-2],2);
                 for(i=0;i!=TR130LEN;i++)
                     tx0130.trans_w[i]=bfin[i];
@@ -901,7 +901,6 @@ void  proctrans(uint16_t transferid,uint8_t src, uint8_t *msg){
                     writeeeprom(0x0D0,bfin,TR130LEN-2);
                 caldate.trans=bfin[TR130LEN-2] | (bfin[TR130LEN-1] <<16);
                 tx0003.val.rqsavdef=tx0003.val.rqsavdef=false;
-                txtrans(0x0132,NULL);
                 bfin[0]=SWVER&0xFFFF;
                 bfin[1]=SWVER>>16;
                 writeeeprom(0x01FC,bfin,2);
