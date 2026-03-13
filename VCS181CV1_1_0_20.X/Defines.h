@@ -57,6 +57,7 @@
 #define MINOFFTIME      5000    //minimum off time since last time the engine ran
 
 #define FANDELAY    5000    //fan switchover time
+#define FANHYST     3   //temp hysteresis
 #define COMPCYC     2000    //cycle time compensation
 #define HS_WARN     80
 #define HS_SHDN     100

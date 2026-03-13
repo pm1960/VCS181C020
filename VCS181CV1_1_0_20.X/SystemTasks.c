@@ -16,9 +16,9 @@ void SysTasks(void){
             sysstat=SYS_CONNECT;
             checkextio(true);
             readintad();
-            initcomp();
-            compcalc(true);
-            checkextad_ac(true);
+//            initcomp();
+//            compcalc(true);
+//            checkextad_ac(true);
             break;
     }
 }
@@ -35,9 +35,15 @@ void checkextio(bool init){
 #define AIRINSW     1
 #define LOCALBS     2   //battle short local input
 #define OILPRSW     3
-
+#define FANOFF      0
+#define FANLOW      1
+#define FANTRANS    2
+#define FANHIGH     3
+    
     static uint8_t digstats;  //bits set in this variable will indicate an active input
-    static uint32_t tmrins[4];
+    static uint8_t fanstat;     
+    static uint32_t tmrins[5];  //tmrins[4] contrls pause when fan is transitioning 
+    int16_t fantemp;
     
     if(init)
         digstats=0xF0;      //inidicates that all signals are off
@@ -53,7 +59,7 @@ void checkextio(bool init){
         }
         else 
             CLEARBIT(*stwordhigh,11);
-        
+
         if(TESTBIT(*genconfh,2)){
             if(!TESTBIT(*miscwordlow,9)){
                 if(switchon(&tmrins[AIRINSW],&digstats,AIRINSW,!PORTAbits.RA9))
@@ -64,14 +70,14 @@ void checkextio(bool init){
             }
         else
             CLEARBIT(*miscwordlow,9);
-        
+
         if(!stat_bits.battles){
             if(switchon(&tmrins[LOCALBS],&digstats,LOCALBS,PORTEbits.RE9))      //battle short triggers on closing contact
                 stat_bits.battles=true;
         }
         else if(switchoff(&tmrins[LOCALBS],&digstats,LOCALBS,!PORTEbits.RE9))      //battle short triggers on closing contact
             stat_bits.battles=false;
-        
+
         if(gcontstat>GENCONTR_STATE_CRANKING){                                      //will not trigger oil pressure switch if generator is not running
             if(!TESTBIT(*stwordhigh,9)){
                 if(switchon(&tmrins[OILPRSW],&digstats,OILPRSW,!PORTGbits.RG0))
@@ -89,7 +95,72 @@ void checkextio(bool init){
         }
         else
             CLEARBIT(*stwordhigh,10);
-            
+    
+        if(gcontstat>GENCONTR_STATE_CRANKING){
+            LATESET=1;
+            if(!TESTBIT(*mwordhigh,4) && TESTBIT(*sensconfl,2))
+                fantemp=*tcylh;
+            else if(!TESTBIT(*mwordlow,14)&& TESTBIT(*sensconfl,0))
+                fantemp=*tcoolin;
+            else
+                fantemp=255;
+            switch(fanstat){
+                case FANOFF:
+                    if(fantemp>*fan_low){
+                        tmrins[4]=t_1ms;
+                        fanstat=FANTRANS;
+                        LATECLR=0x00024;
+                    }
+                    break;
+                    
+                case FANTRANS:
+                    if(fantemp<*fan_low){
+                        fanstat=FANOFF;
+                        tmrins[4]=t_1ms;
+                    }
+                    else if((t_1ms-tmrins[4])>FANDELAY){
+                        if(fantemp<*fan_high){
+                            LATESET=0x0008;
+                            fanstat=FANLOW;
+                        }
+                        else{
+                            LATESET=0x0010;
+                            LATESET=0x0010;
+                            fanstat=FANHIGH;
+                        }
+                    }
+                    break;
+                    
+                case FANLOW:
+                    if(fantemp<(*fan_low-FANHYST)){
+                        LATECLR=024;
+                        fanstat=FANOFF;
+                    }
+                    else if(fantemp>*fan_high){
+                        LATECLR=024;
+                        tmrins[4]=t_1ms;
+                        fanstat=FANTRANS;
+                    }
+                    break;
+                    
+                case FANHIGH:
+                    if(fantemp<(*fan_high-FANHYST)){
+                        LATECLR=024;
+                        fanstat=FANTRANS;
+                        tmrins[4]=t_1ms;
+                    }
+                    break;
+                    
+                default:
+                    LATECLR=024;
+                    fanstat=FANOFF;
+                    break;
+            }
+        }
+        else {
+            fanstat=FANOFF;
+            LATECLR=0x00025;
+        }
     }
 }
 
