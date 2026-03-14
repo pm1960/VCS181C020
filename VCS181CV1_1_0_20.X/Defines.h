@@ -25,7 +25,7 @@
 #define MAXNOCAN    5000    //max time without CAN communication
 #define VREF        2500    //same reference for AC and DC
 
-#define TR101LEN    40
+#define TR101LEN    39
 #define TR130LEN    60
 #define MAXRQS      12
 #define MAXLOG      75
@@ -111,11 +111,12 @@
 
 #define DIGDEBOUNCE 20
 
-#define VCSLOWTEMP      -5
+
+#define MAXTEMPVCS      80
 #define AFTERCRANK      2000    //duration of extended after-crank period. Only valid if started based on il pressure which in turn is only valid if used on asynchronous generators
 
-#define MAXPER         1000000  //100ms-> 10Hz -> 600rpm
-#define MINPER          100000  //10mS ->100Hz -> 6000rpm
+#define MAXPER         62500    //100ms-> 10Hz -> 600rpm
+#define MINPER          6250    //10mS ->100Hz -> 6000rpm
 
 #endif /* _DEFINES_H */
 

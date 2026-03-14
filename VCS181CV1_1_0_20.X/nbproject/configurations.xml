@@ -13,7 +13,6 @@
       <itemPath>Globals.h</itemPath>
       <itemPath>cpusetup.h</itemPath>
       <itemPath>auxfunc.h</itemPath>
-      <itemPath>LookupTable.h</itemPath>
       <itemPath>Structures.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"

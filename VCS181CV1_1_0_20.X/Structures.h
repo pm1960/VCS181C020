@@ -9,8 +9,8 @@
 
 typedef enum{
     GOTUPULS = (uint32_t)1<<0,
-    GOTIPULS = (uint32_t)1<<1,        
-    
+    GOTIPULS = (uint32_t)1<<1,     
+    RDVCSTEMP = (uint32_t)1<<2,
 }isr_flags_t;
 
 typedef struct{
@@ -19,6 +19,20 @@ typedef struct{
     uint16_t samplesx;
     uint32_t tmrstart;
 }ACCHANNEL;
+
+typedef enum{
+    all_off=0,
+    blk_sync,
+    blk_alt,
+    rd_gn_blk,
+    rd_blk,
+    gn_blk,
+    rd_solid,
+    gn_solid,
+    gnon_rdblk,
+    rdon_gnblk,
+}LEDSTAT;
+
 
 typedef union{
     uint8_t bf8[128];

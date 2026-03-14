@@ -7,7 +7,7 @@ volatile uint32_t isr_flags=0;
 volatile uint16_t nocan=0;
 volatile uint16_t adchan[14]={0};
 volatile uint16_t isoresptr=0xFF;
-volatile uint16_t tvcstemp=0;
+volatile uint16_t vcstemp=0;
 volatile uint16_t oiltemp=0; 
 volatile uint8_t adccntr=0;
 volatile uint8_t u17cntr=0;
@@ -111,7 +111,7 @@ CANMFR *mfrx[MFBUFS]={&mfr0,&mfr1,&mfr2,&mfr3,&mfr4,&mfr5,&mfr6,&mfr7};
 STAT_BITS stat_bits={0};
 SYS_STAT sysstat=SYS_INIT;
 GEN_APP_STATUS gcontstat=GENCONTR_STATE_INIT;
-
+LEDSTAT ledstat=0;
 
 uint32_t valsn=0;
 uint32_t perssn=0;
@@ -130,6 +130,9 @@ uint16_t rtkmax=0;
 uint16_t sinfi=0;
 uint16_t actmax=0;
 uint16_t actmin=0;
+
+uint16_t batvolt=0;
+
 //transfer 0x0101
     uint16_t *statvar=&tx0101.trans_w[0]; 
     uint16_t *uac1=&tx0101.trans_w[1]; 
@@ -147,33 +150,32 @@ uint16_t actmin=0;
     int16_t   *tcylh=&tx0101.trans_w[13];  
     int16_t   *texhm=&tx0101.trans_w[14];  
     int16_t   *tcoil=&tx0101.trans_w[15];  
-    int16_t   *tvcs=&tx0101.trans_w[16];  
-    int16_t   *altbear=&tx0101.trans_w[17];
-    uint8_t   *poil=&tx0101.trans_b[36];
-    uint8_t   *tank=&tx0101.trans_b[37];
-    uint16_t  *engspeed=&tx0101.trans_w[19];
-    uint16_t  *actu=&tx0101.trans_w[20];
-    uint16_t  *acti=&tx0101.trans_w[21];
-    uint16_t  *ifuelp=&tx0101.trans_w[22];
-    uint16_t  *runlast=&tx0101.trans_w[23];
-    uint16_t  *enlast=&tx0101.trans_w[24];
-    uint16_t  *codeWarn=&tx0101.trans_w[25];
-    uint16_t  *codeAlm=&tx0101.trans_w[26];
-    uint16_t  *mwordlow=&tx0101.trans_w[27];
-    uint16_t  *mwordhigh=&tx0101.trans_w[28];
-    uint16_t  *stwordlow=&tx0101.trans_w[29];
-    uint16_t  *stwordhigh=&tx0101.trans_w[30];
-    uint16_t  *miscwordlow=&tx0101.trans_w[31];
-    uint16_t  *miscwordhigh=&tx0101.trans_w[32];
-    uint16_t  *pendsnl=&tx0101.trans_w[33];
-    uint16_t  *pendsnh=&tx0101.trans_w[34];
-    uint8_t   *comact=&tx0101.trans_b[70];
-    uint8_t   *banks=&tx0101.trans_b[71];
-    uint16_t  *tankres=&tx0101.trans_w[36];
-    int16_t   *engoil=&tx0101.trans_w[37];
-    int16_t   *coolout=&tx0101.trans_w[38];
-    uint8_t   *comptemp=&tx0101.trans_b[78];
-    uint8_t   *stastoreas=&tx0101.trans_b[79];
+    int16_t   *altbear=&tx0101.trans_w[16];
+    int16_t   *coolout=&tx0101.trans_w[17];
+    int16_t   *engoil=&tx0101.trans_w[18];
+    int16_t   *tvcs=&tx0101.trans_w[19];
+    uint8_t   *poil=&tx0101.trans_b[40];
+    uint8_t   *tank=&tx0101.trans_b[41];
+    uint16_t  *engspeed=&tx0101.trans_w[21];
+    uint16_t  *actu=&tx0101.trans_w[22];
+    uint16_t  *acti=&tx0101.trans_w[23];
+    uint16_t  *runlast=&tx0101.trans_w[24];
+    uint16_t  *enlast=&tx0101.trans_w[25];
+    uint16_t  *codeWarn=&tx0101.trans_w[26];
+    uint16_t  *codeAlm=&tx0101.trans_w[27];
+    uint16_t  *mwordlow=&tx0101.trans_w[28];
+    uint16_t  *mwordhigh=&tx0101.trans_w[29];
+    uint16_t  *stwordlow=&tx0101.trans_w[30];
+    uint16_t  *stwordhigh=&tx0101.trans_w[31];
+    uint16_t  *miscwordlow=&tx0101.trans_w[32];
+    uint16_t  *miscwordhigh=&tx0101.trans_w[33];
+    uint16_t  *pendsnl=&tx0101.trans_w[34];
+    uint16_t  *pendsnh=&tx0101.trans_w[35];
+    uint8_t   *comact=&tx0101.trans_b[72];
+    uint8_t   *banks=&tx0101.trans_b[73];
+    uint16_t  *tankres=&tx0101.trans_w[37];
+    uint8_t   *comptemp=&tx0101.trans_b[76];
+    uint8_t   *stastoreas=&tx0101.trans_b[77];
     
     
     uint16_t *idlespeed=&tx0130.trans_w[0];
@@ -294,7 +296,7 @@ void portsInit(void){
     TRISE=0x0201;        
     LATE=0;         
     
-    TRISF = 0x002D;
+    TRISF = 0x0025;
     LATF = 0;
     
     TRISG = 0xC080;      //all outputs
@@ -303,34 +305,41 @@ void portsInit(void){
 
 
 void adc_init(void){
-    //ADC: WIll use all 14 ports, external reference
-    AD1CON1=0;    
+    AD1PCFG=0xFFFC;     
+    AD1CON1=0;			//forces normal 16 bit output,
     AD1CON1bits.SSRC=0b111;	//set to auto convert
     AD1CON1bits.CLRASAM=1;	//clear sampling automatically
-    AD1CON1bits.ASAM=true;
-    AD1CON1bits.SAMP=true;
+    AD1CON1bits.ASAM=1;     //prepare for auto-sampling
+    AD1CON1bits.SAMP=1; 
 
-    AD1CON2=0;              //Set buffer mode to 16 word buffer, forces usage of always MUX A
+    AD1CON2=0;			//Set buffer mode to 16 word buffer, forces usage of always MUX A
     AD1CON2bits.VCFG=1;		//Reference is AVSS and positive Vref
     AD1CON2bits.CSCNA=1;	//scan inputs;
-    AD1CON2bits.SMPI=0b1101;    //interrupt after 14 samples, programming port will not get sampled
-   
+    AD1CON2bits.SMPI=13;     //interrupt after 14samples;
+    
     AD1CON3=0;              //ADC clock derived from peripheral bus
-    AD1CON3bits.SAMC=0b111;	//Auto Sample timer is set to 7 TAD; with TAD=200ns sampling time will be 1.4 us
+    AD1CON3bits.SAMC=6;     //Auto Sample timer is set to 6 TAD; with TAD=200ns sampling time will be 1.2 us
+
     AD1CON3bits.ADCS=3;		//TAD will be 200ns; One conversion=12TAD=2.4us
-    //with a total of 1.4us sampling plus 2.4us conversion time a total of 3.8us is required per channel and 53.2us for 14 channels
+    //with a total of 1.2us sampling plus 2.4us conversion time a total of 3.6us is required per channel and 46.8 us for 13 channels. TMR 1 will trigger every 80us. 
 
-    AD1CHS=0;               //select VR- as negative reference for MUX A; MUX B is not used anyway
-    AD1CSSL=0xFFFC;        //Do not scan ports 0 and 1 (programming) 
-
-    AD1PCFG=0x03;
+    AD1CHS=0;			//select VR- as negative reference for MUX A; MUX B is not used anyway
+    AD1CSSL=0xFFFC;     //
 }
+
 
 void tmr_init(void){    
 //Distribution of timer and PWM  resources:
+//timer 1 triggers every 100us to re-start an ADC conversion
 //Timer 2 for actuator PWM
 //Timer 3 time base for capture. No interrupt, free running
 //Timer 4 general timekeeping, increments every 1ms
+    
+    T1CON=0;
+    TMR1=0;
+    T1CONbits.TCKPS=0b01;       //Prescaling factor is 8:1 (200ns out) no gating, peripheral clock source
+    PR1=500;                    //will cause interrupt every 100us
+    T1CONbits.ON=true;
     
     T1CON=0;
     TMR1=0;
@@ -397,17 +406,17 @@ void initcap(void){
 }
 
 void isrconfig(void){
-//Timer interrupts: Timer 1 and timer 3. Both priority 3, with timer 1 higher secondary priority
+//Timer interrupts: Timer 1 and timer 4. 
+    IPC1bits.T1IP=3;
+    IPC1bits.INT1IS=3;
+    IFS0bits.T1IF=false;
+    IEC0bits.T1IE=true;
+    
     IPC4bits.T4IP=4;
     IPC4bits.T4IS=3;
     IFS0bits.T4IF=false;
     IEC0bits.T4IE=true;
     
-//ADC, priority 3
-    IPC6bits.AD1IP=3;
-    IPC6bits.AD1IS=3;
-    IEC1bits.AD1IE=true;
-    IFS1bits.AD1IF=false;
     
 //SPI2: Priority 2
     IPC7bits.SPI2IP=2;
@@ -444,24 +453,26 @@ bool cpu_init(void){
     uint16_t rdbf[2];
     uint8_t i;
     bool retval=false;
-    AD1CON1bits.ADON=true;
+    AD1CON1bits.ON=true;
+    AD1CON1bits.SAMP=true;
     LATACLR=0x0040;     //act. on
     while(!retval || ((t_1ms-tmrx)>500)){
-        while(adccntr<65);
+        while(adccntr<64);
         adchan[1]>>=6;
         adchan[5]>>=6;
-        *ubatt=(uint32_t)adchan[1]*VREF*17/10;             //divider ratio is 17, factor1/10 for unit
-        *actu=(uint32_t)adchan[5]*VREF*249/(2490+6040);       // Actuator voltage; include resistive divider and factor 1/10 because unit is 10mV
-        restart_adc();
+        *ubatt=(((uint32_t)adchan[1]*VREF)>>10)*17/10;             //divider ratio is 17, factor1/10 for unit
+        *actu=((uint32_t)adchan[5]*VREF>>10)*(249+604)/2490;       // Actuator voltage; include resistive divider and factor 1/10 because unit is 10mV
+        for(i=0;i!=14;i++)
+            adchan[i]=0;
+        adccntr=0;
         if(PORTEbits.RE0)
             hwtype=ISC005;
         else
             hwtype=ISC004;
-        retval=(*actu<700) && (*actu>5500) && (*ubatt>VBATTMIN) && (*ubatt<VBATTMAX);
+        retval=(*actu<700) && (*actu>450) && (*ubatt>VBATTMIN) && (*ubatt<VBATTMAX);
         for(i=0;i!=8;i++)
             adchan[i]=0;
-        if(!retval)
-            adccntr=0;  //start another round
+        adccntr=0;  //start another round
     }
     LATASET=0x0040;     //turn the actuator off again. Will only require it when running the generator
     if(retval){
@@ -533,6 +544,7 @@ bool cpu_init(void){
         gcontstat=GENCONTR_STATE_INIT;
         cancomstat=CAN_STATE_INIT;
         stat_bits.onpending=true;
+        ledstat=blk_alt;
     }
     return(retval);
 }

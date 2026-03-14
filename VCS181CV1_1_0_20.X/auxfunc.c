@@ -73,7 +73,7 @@ bool readeeprom(uint16_t adr,uint16_t *buf,uint16_t len){
         return(false);	//address violation or length is zero or longer than EEPROM
     else{
         LATDSET=0x1000;
-        while(((t_1ms-tmrx)<2)&&(wip))
+        while(((t_1ms-tmrx)<5)&&(wip))
             wip=TESTBIT(readsr(),0);
         if(wip)
             return(false);//timeout while reading SR
@@ -83,18 +83,18 @@ bool readeeprom(uint16_t adr,uint16_t *buf,uint16_t len){
             while(SPI1STATbits.SPIBUSY);
             dm=SPI1BUF;                 //dummy read
             SPI1BUF=adr>>8;
-            while(!SPI1STATbits.SPIBUSY);
+            while(SPI1STATbits.SPIBUSY);
             dm=SPI1BUF;                //dummy read
             SPI1BUF=adr&0xFF;
-            while(!SPI1STATbits.SPIBUSY);
+            while(SPI1STATbits.SPIBUSY);
             dm=SPI1BUF;                //dummy read
 //now finally do the entire read loop     
             while(len--){
                 SPI1BUF=dm;             //some dummy write to enforce reading
-                while(!SPI1STATbits.SPIBUSY);
+                while(SPI1STATbits.SPIBUSY);
                 bf=SPI1BUF<<8;
                 SPI1BUF=dm;             //some dummy write to enforce reading
-                while(!SPI1STATbits.SPIBUSY);
+                while(SPI1STATbits.SPIBUSY);
                 bf|=SPI1BUF;
                 *buf++=bf;
             }
@@ -127,26 +127,26 @@ bool writeeeprom(uint16_t adr, uint16_t *buf, uint16_t len){
                 inpage=true;
                 LATDCLR=0x1000;
                 SPI1BUF=2;      //send write command
-                while(!SPI1STATbits.SPIBUSY);
+                while(SPI1STATbits.SPIBUSY);
                 dm=SPI1BUF;                //retrieve one dummy byte, then return to 16 bit width
                 SPI1BUF=adr>>8;
-                while(!SPI1STATbits.SPIBUSY);
+                while(SPI1STATbits.SPIBUSY);
                 dm=SPI1BUF;                //retrieve one dummy byte
                 SPI1BUF=adr&0xFF;
-                while(!SPI1STATbits.SPIBUSY);
+                while(SPI1STATbits.SPIBUSY);
                 dm=SPI1BUF;                //retrieve one dummy byte
                 while(inpage&&len){
                     bf=*buf++;
                     len--;
                     adr+=2;
                     SPI1BUF=bf>>8;
-                    while(!SPI1STATbits.SPIBUSY);
+                    while(SPI1STATbits.SPIBUSY);
                     dm=SPI1BUF;
                     SPI1BUF=bf&0xFF;
-                    while(!SPI1STATbits.SPIBUSY);
+                    while(SPI1STATbits.SPIBUSY);
                     if(!(adr&(MEMPAGE-1)))
                         inpage=false;
-                    while(!SPI1STATbits.SPIBUSY);
+                    while(SPI1STATbits.SPIBUSY);
                     dm=SPI1BUF;
                 }
                 LATDSET=0x1000;
@@ -183,10 +183,10 @@ void writesr(uint8_t sreg){
     SPI1STATbits.SPIROV=false;
     LATDCLR=0x1000;
     SPI1BUF=0x01;       //send command write sr
-    while((!SPI1STATbits.SPIRBF)&&((t_1ms-tmrx)<3));
+    while((SPI1STATbits.SPIBUSY)&&((t_1ms-tmrx)<3));
     dm=SPI1BUF; //dummy read
     SPI1BUF=sreg;
-    while((!SPI1STATbits.SPIRBF)&&((t_1ms-tmrx)<3));
+    while((SPI1STATbits.SPIBUSY)&&((t_1ms-tmrx)<3));
     dm=SPI1BUF; //dummy read
     LATDSET=0x1000; //cs high 
 }//writesr
@@ -714,10 +714,33 @@ bool actfailoff(uint8_t *calst){
     return(true);
 }
 
-void restart_adc(void){
-    uint8_t i;
-    for(i=0;i!=14;i++)
-        adchan[i]=0;
-    adccntr=0;
-    AD1CON1bits.SAMP=1;
+//function delaycheck will perform a delay check for all kind of alarms and will return true if that alarm
+//needs to be set. It requires as an input the actual value of the variable to be monitored,the threshold,
+//the required delay in ms, a pointer to the timer variable assigned to that delay, a pointer to a 16bit status
+//variable holding a status bit of whether that alarm was already pending or not, a bit counter showing which
+//particular bit in that status variable is assigned to this alarm and input of whether high or low limit is monitored
+bool delaycheck(int16_t val, int16_t limval, uint32_t delay, uint32_t *tmr,
+    uint16_t *stat,uint8_t bitno,bool highlim){
+    bool retval=false,isalarm=false;
+    if(highlim){//monitor for above high limit
+        if(val>limval)
+            isalarm=true;
+    }
+    else{
+        if(val<limval)
+            isalarm=true;
+    }
+    if(isalarm){
+        if(TESTBIT(*stat,bitno)){
+            if((t_1ms-*tmr)>delay)
+                retval=true;        //delay expired.
+        }
+        else{
+            SETBIT(*stat,bitno);
+            *tmr=t_1ms;
+        }
+    }
+    else
+        CLEARBIT(*stat,bitno);
+    return(retval);
 }

@@ -75,6 +75,10 @@ extern uint8_t mfdata[MFBUFS][223];
 extern SYS_STAT sysstat;
 extern GEN_APP_STATUS gcontstat;
 
+extern LEDSTAT ledstat;
+
+extern uint16_t batvolt;
+
 #endif /* _GLOBALS_H */
 
 /* *****************************************************************************

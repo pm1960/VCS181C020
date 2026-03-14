@@ -417,6 +417,7 @@ bool txtrans(uint16_t rqtrans,uint8_t *bf){
                 mfrx[k]->status=TX_REQ;
                 mfrx[k]->length=TR101LEN<<1;
                 *statvar=(uint8_t)gcontstat | (st_feedb.trans[0]<<8);
+                tx0101.trans_w[11]=batvolt;
                 for(i=0;i!=TR101LEN<<1;i++)
                     mfdata[k][i]=tx0101.trans_b[i];
                 retval=true;

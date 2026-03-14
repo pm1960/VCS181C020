@@ -13,9 +13,6 @@
 #include "Globals.h" 
 //#include "BitsManager.h"
 
-void restart_adc(void);
-
-
 void initextadc(void);
 bool readeeprom(uint16_t adr,uint16_t *buf,uint16_t len);
 bool writeeeprom(uint16_t adr, uint16_t *buf, uint16_t len);
@@ -34,7 +31,8 @@ void initsvn(void);
 uint32_t newcaldat(uint16_t days,uint32_t refdat);
 void writecal(uint16_t adr);
 bool actcalib(bool init);
-
+bool delaycheck(int16_t val, int16_t limval, uint32_t delay, uint32_t *tmr,
+    uint16_t *stat,uint8_t bitno,bool highlim);
 #endif /* _auxfunc_H */
 
 /* *****************************************************************************
